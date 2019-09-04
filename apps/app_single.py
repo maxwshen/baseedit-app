@@ -54,6 +54,7 @@ default_right_text = ''.join([random.choice(list('ACGT')) for s in range(4)]) + 
 if os.path.isfile('single_default.pkl'):
   subprocess.check_output('rm -rf single_default.pkl', shell = True)
 
+
 ## Parameters
 
 ###################################################################
