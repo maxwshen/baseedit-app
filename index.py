@@ -5,8 +5,10 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import flask
 
-from app import app
-from apps import app_single, app_batch, app_gene, app_guide, app_about, app_termsofuse
+from app_holder import app
+# from apps import app_single, app_batch, app_gene, app_guide, app_about, app_termsofuse
+from apps import app_single
+
 
 ###################################################################
 ###################################################################
@@ -17,7 +19,7 @@ app.layout = html.Div([
 
     # Hidden datatable for proper rendering
     # https://community.plot.ly/t/display-tables-in-dash/4707/40?u=chriddyp
-    html.Div(dt.DataTable(rows=[{}]), style={'display': 'none'})
+    # html.Div(dt.DataTable(rows=[{}]), style={'display': 'none'})
 ])
 
 app.title = 'BE-Hive'
