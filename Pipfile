@@ -21,6 +21,7 @@ redis = "*"
 flask-caching = "*"
 django-heroku = "*"
 "24386c3" = {file = "https://download.pytorch.org/whl/cpu/torch-1.1.0-cp37-cp37m-linux_x86_64.whl"}
+"3ae9ae8" = {file = "https://download.pytorch.org/whl/cpu/torchvision-0.3.0-cp37-cp37m-linux_x86_64.whl"}
 
 [requires]
 python_version = "3.7"
