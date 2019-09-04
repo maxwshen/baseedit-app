@@ -8,6 +8,18 @@ name = "pypi"
 [packages]
 sklearn = "*"
 torch = "==1.1.0"
+dash = "*"
+django = "*"
+gunicorn = "*"
+flask = "*"
+plotly = "*"
+seaborn = "*"
+scipy = "*"
+numpy = "*"
+matplotlib = "*"
+rq = "*"
+redis = "*"
+flask-caching = "*"
 
 [requires]
 python_version = "3.7"
