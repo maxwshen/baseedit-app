@@ -1,4 +1,4 @@
-import pickle, copy, os, datetime, subprocess, json
+import pickle, copy, os, datetime, subprocess, json, sys
 from collections import defaultdict
 import random
 import numpy as np
@@ -22,12 +22,13 @@ import lib, header
 
 from app_holder import app
 
-# from rq import Queue
-# from worker import conn
-# rq = Queue(connection = conn)
+# Import models
+app_fold = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1]) + '/'
+sys.path.append(app_fold + 'be_predict_bystander/')
+import predict as bystander_model
+sys.path[-1] = app_fold + 'be_predict_efficiency/'
+import predict as efficiency_model
 
-# init
-# inDelphi.init_model()
 try:
   os.mkdir('user-csvs/')
 except FileExistsError:

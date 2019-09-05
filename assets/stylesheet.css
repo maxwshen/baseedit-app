@@ -135,23 +135,6 @@
     color: rgb(150, 150, 150);
   }
 
-  .markdown_style {
-    font-size: 18px;
-  }
-
-  .hashbuffer::before {
-    display: block;
-    content: " ";
-    margin-top: -110px;
-    height: 110px;
-    visibility: hidden;
-    pointer-events: none;
-  }
-
-  .inputright {
-    text-align: right;
-  }
-
   /* Module styles */
   .module_header {
     background-color: rgba(0, 0, 0, 0.05);
@@ -259,43 +242,6 @@
   }
 
   /**/
-  /* Tool tip: right side */
-  /**/
-  .tooltipright {
-    position: relative;
-    display: inline-block;
-  }
-
-  .tooltipright .tooltiprighttext {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.1s;
-    position: absolute;
-    z-index: 1;
-
-    left: 130%;
-    padding: 8px 8px;
-    border-radius: 6px;
-
-    background-color: #555;
-    color: #eee;
-
-    font-size: small;
-    line-height: 1.2;
-  }
-
-  /* Show the tooltip text when you mouse over the tooltip container */
-  .tooltipright:hover .tooltiprighttext {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .tooltiprightlogo {
-    height: 18px;
-    vertical-align: text-bottom;
-  }
-
-  /**/
   /* Fade-in animation: fade in from top */
   /**/
   .animate-top {
@@ -367,7 +313,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(255, 255, 255, 0.7);
     text-align: center;
     cursor: progress;
 
