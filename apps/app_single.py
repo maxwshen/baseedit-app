@@ -76,10 +76,6 @@ layout = html.Div([
         children = 'init'
       ),
       html.Div(
-        id = 'S_hidden-cache-dsb-right',
-        children = '%s' % (time.time())
-      ),
-      html.Div(
         id = 'S_hidden-chosen-base_editor',
         children = 'BE4',
       ),
@@ -164,25 +160,48 @@ layout = html.Div([
   html.Div(
     [
       # First (not bottom animated)
-        ###################################################
-        # Module: Single base editor
-        ###################################################
+      ###################################################
+      # Module: Single base editor
+      ###################################################
+      html.Div([
+        # header
         html.Div([
-          # header
           html.Div([
-            html.Div([
-              html.Strong('Ex: Single base editor')
-              ],
-              className = 'module_header_text'),
+            html.Strong('Ex: Single base editor')
             ],
-            className = 'module_header'
-          ),
-
-          html.Div(
-            id = 'S_text-test_efficiency',
-          ),
-        ], className = 'module_style',
+            className = 'module_header_text'),
+          ],
+          className = 'module_header'
         ),
+
+        html.Div(
+          id = 'S_text-test_efficiency',
+        ),
+
+        html.Div(
+          [
+            # Text table
+            dcc.Graph(
+              id = 'S_summary-alignment-table',
+              config = dict(
+                modeBarButtonsToRemove = modebarbuttons_2d,
+                displaylogo = False,
+                displayModeBar = False,
+                staticPlot = True,
+              ),
+              style = dict(
+                height = 290,
+                width = 629,
+              ),
+              className = 'twelve columns',
+            ),
+
+          ],
+          className = 'row',
+        ),
+
+      ], className = 'module_style',
+      ),
 
       # Animate bottom
       html.Div([
@@ -246,7 +265,6 @@ def bystander_predict_cache(seq, base_editor, celltype):
     celltype = celltype,
   )
   pred_df, stats = bystander_model.predict(seq)
-  stats = pd.DataFrame(stats, index = [0])
   return pred_df, stats
 
 @cache.memoize(timeout = cache_timeout)
@@ -284,6 +302,64 @@ def efficiency_predict(seq, base_editor, celltype):
 ##
 # Summary of predictions callbacks
 ##
+@app.callback(
+  Output('S_summary-alignment-table', 'figure'),
+  [Input('S_hidden-pred-signal_bystander', 'children'),
+  ])
+def update_summary_alignment_text(signal):
+  seq, base_editor, celltype = signal.split(',')
+  pred_df, stats = bystander_predict_cache(seq, base_editor, celltype)
+
+  top10 = pred_df.iloc[:10]
+  fqs = top10['Predicted frequency']
+  fq_strings = [''] + [f'{100*s:.1f}' for s in fqs]
+
+  gt_cols = [col for col in pred_df.columns if col != 'Predicted frequency']
+  p0idx = 19
+  target_seq = stats['50-nt target sequence']
+  alignments = [target_seq]
+  print(top10.columns)
+  for jdx, row in top10.iterrows():
+    gt = ''
+    for idx, nt in enumerate(target_seq):
+      pos = idx - p0idx
+      cand_col = f'{nt}{pos}'
+      if cand_col not in gt_cols:
+        # bullet: •. Use with smaller font size
+        gt += '.'
+      else:
+        gt += row[cand_col]
+    alignments.append(gt)
+
+  return dict(
+    data = [go.Table(
+      columnwidth = [310, 110, 60],
+      header = dict(
+        values = ['Alignment', '%'],
+        align = ['center', 'right'], 
+        line = dict(color = 'white'),
+        fill = dict(color = 'white'),
+      ),
+      cells = dict(
+        values = [alignments, fq_strings],
+        align = ['center', 'right'], 
+        line = dict(color = 'white'),
+        fill = dict(color = 'white'),
+        font = dict(family = 'monospace'),
+      ),
+    )],
+    layout = go.Layout(
+      font = dict(
+        family = 'monospace',
+      ),
+      margin = dict(
+        l = 10,
+        r = 0,
+        t = 5,
+        b = 5,
+      ),
+    ),
+  )
 
 ##
 # General stats callbacks
