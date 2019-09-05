@@ -312,40 +312,82 @@ def update_summary_alignment_text(signal):
 
   top10 = pred_df.iloc[:10]
   fqs = top10['Predicted frequency']
-  fq_strings = [''] + [f'{100*s:.1f}' for s in fqs]
+  fq_strings = [''] + [f'{100*s:.1f}%' for s in fqs]
 
   gt_cols = [col for col in pred_df.columns if col != 'Predicted frequency']
   p0idx = 19
   target_seq = stats['50-nt target sequence']
-  alignments = [target_seq]
-  print(top10.columns)
-  for jdx, row in top10.iterrows():
-    gt = ''
-    for idx, nt in enumerate(target_seq):
+
+  fill_cmap = {
+    'match': 'white',
+    # 'match': 'rgba(230, 233, 236, 50)',
+    'A': 'rgba(236, 67, 57, 255)',
+    'C': 'rgba(239, 185, 32, 255)',
+    'G': 'rgba(124, 184, 47, 255)',
+    'T': 'rgba(0, 160, 220, 255)',
+  }
+
+  font_cmap = {
+    # 'match': 'rgba(230, 233, 236, 50)',
+    # 'match': 'rgba(230, 233, 236, 255)',
+    'match': 'rgba(208, 211, 214, 255)',
+    'edited': 'black',
+  }
+
+  fillcolors = []
+  fontcolors = []
+  poswise_cols = []
+  for idx, nt in enumerate(target_seq):
+    # first row is target_seq
+    pos_col = nt  
+    col_fill_colors = [fill_cmap[nt]]
+    col_font_colors = ['black']
+    for jdx, row in top10.iterrows():
       pos = idx - p0idx
       cand_col = f'{nt}{pos}'
       if cand_col not in gt_cols:
-        # bullet: •. Use with smaller font size
-        gt += '.'
+        # pos_col += '.'
+        pos_col += nt
+        col_fill_colors.append(fill_cmap['match'])
+        col_font_colors.append(font_cmap['match'])
+        # pos_col += '•'
       else:
-        gt += row[cand_col]
-    alignments.append(gt)
+        pos_col += row[cand_col]
+        row_nt = row[cand_col]
+        if row_nt == nt:
+          col_fill_colors.append(fill_cmap['match'])
+          col_font_colors.append(font_cmap['match'])
+        else:
+          col_fill_colors.append(fill_cmap[row_nt])
+          col_font_colors.append(font_cmap['edited'])
+    poswise_cols.append(list(pos_col))
+    fillcolors.append(col_fill_colors)
+    fontcolors.append(col_font_colors)
+
+  # alignment_col_width = 420
+  # pos_col_width = alignment_col_width // len(poswise_cols)
+  pos_col_width = 1.2
 
   return dict(
     data = [go.Table(
-      columnwidth = [310, 110, 60],
+      columnwidth = [pos_col_width] * len(poswise_cols) + [10],
       header = dict(
-        values = ['Alignment', '%'],
-        align = ['center', 'right'], 
-        line = dict(color = 'white'),
+        line = dict(width = 0),
         fill = dict(color = 'white'),
+        height = 0,
       ),
       cells = dict(
-        values = [alignments, fq_strings],
-        align = ['center', 'right'], 
-        line = dict(color = 'white'),
-        fill = dict(color = 'white'),
-        font = dict(family = 'monospace'),
+        values = poswise_cols + [fq_strings],
+        align = ['center'] * len(poswise_cols) + ['right'], 
+        fill = dict(
+          color = fillcolors + ['rgb(255, 255, 255)'] * len(fq_strings),
+        ),
+        line = dict(width = 1, color = 'rgba(255, 255, 255, 130)'),
+        font = dict(
+          family = 'monospace',
+          color = fontcolors + ['black'] * len(fq_strings),
+        ),
+        height = 20,
       ),
     )],
     layout = go.Layout(
