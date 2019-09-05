@@ -24,10 +24,9 @@ from app_holder import app
 
 # Import models
 app_fold = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1]) + '/'
-sys.path.append(app_fold + 'be_predict_bystander/')
-import predict as bystander_model
-sys.path[-1] = app_fold + 'be_predict_efficiency/'
-import predict as efficiency_model
+sys.path.append(app_fold)
+from be_predict_bystander import predict as bystander_model
+from be_predict_efficiency import predict as efficiency_model
 
 try:
   os.mkdir('user-csvs/')
@@ -36,12 +35,20 @@ except FileExistsError:
 else:
   subprocess.check_output('rm -rf user-csvs/*', shell = True)
 
+# Set up flask caching
+CACHE_CONFIG = {
+  'CACHE_TYPE': 'redis',
+  'CACHE_REDIS_URL': os.environ.get('REDIS_URL', 'localhost:6379')
+}
+cache = Cache()
+cache.init_app(app.server, config = CACHE_CONFIG)
+cache_timeout = 300
+
 # Remove these plotly modebar buttons to limit interactivity
 modebarbuttons_2d = ['zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines']
 
 # Random default, which is cached on filesystem
-default_left_text = ''.join([random.choice(list('ACGT')) for s in range(60)])
-default_right_text = ''.join([random.choice(list('ACGT')) for s in range(4)]) + 'GG' + ''.join([random.choice(list('ACGT')) for s in range(54)])
+default_text = ''.join([random.choice(list('ACGT')) for s in range(50)])
 if os.path.isfile('single_default.pkl'):
   subprocess.check_output('rm -rf single_default.pkl', shell = True)
 
@@ -61,12 +68,24 @@ layout = html.Div([
   html.Div(
     [
       html.Div(
-        id = 'S_hidden-pred-signal',
+        id = 'S_hidden-pred-signal_bystander',
+        children = 'init'
+      ),
+      html.Div(
+        id = 'S_hidden-pred-signal_efficiency',
         children = 'init'
       ),
       html.Div(
         id = 'S_hidden-cache-dsb-right',
         children = '%s' % (time.time())
+      ),
+      html.Div(
+        id = 'S_hidden-chosen-base_editor',
+        children = 'BE4',
+      ),
+      html.Div(
+        id = 'S_hidden-chosen-celltype',
+        children = 'mES',
       ),
 
       dcc.Location(
@@ -89,6 +108,43 @@ layout = html.Div([
       ###################################################
       header.get_navigation_header('single'),
 
+      ###################################################
+      # Sequence boxes
+      ###################################################
+      html.Div([
+        html.Div(
+          [
+            dcc.Input(
+              id = 'S_textbox', 
+              size = '28',
+              value = default_text,
+              type = 'text',
+              autoFocus = True,
+              style = dict(
+                fontFamily = 'monospace',
+                fontSize = 16,
+                # float = 'left',
+                transform = 'translateX(50%)',
+              ),
+            )
+          ],
+          className = 'dna_textbox',
+        ),
+        ], style = dict(
+          verticalAlign = 'center',
+          whiteSpace = 'nowrap',
+          overflowX = 'auto',
+        ),
+      ),
+
+      # Empty div for bottom margin in header
+      html.Div(
+        [], 
+        style = dict(
+          marginBottom = '10px',
+        ),
+      )
+
     ],
     style = dict(
       position = 'fixed',
@@ -106,6 +162,62 @@ layout = html.Div([
   # Body / plots
   ##
   html.Div(
+    [
+      # First (not bottom animated)
+        ###################################################
+        # Module: Single base editor
+        ###################################################
+        html.Div([
+          # header
+          html.Div([
+            html.Div([
+              html.Strong('Ex: Single base editor')
+              ],
+              className = 'module_header_text'),
+            ],
+            className = 'module_header'
+          ),
+
+          html.Div(
+            id = 'S_text-test_efficiency',
+          ),
+        ], className = 'module_style',
+        ),
+
+      # Animate bottom
+      html.Div([
+
+        ###################################################
+        # Module: Single base editor
+        ###################################################
+        html.Div([
+          # header
+          html.Div([
+            html.Div([
+              html.Strong('Ex: Single base editor')
+              ],
+              className = 'module_header_text'),
+            ],
+            className = 'module_header'
+          ),
+        ], className = 'module_style',
+        ),
+
+        ],
+        id = 'S_plots_body',
+        style = dict(
+          display = 'none',
+        ),
+        className = 'animate-bottom',
+      ),
+
+    ],
+    # body style
+    # id = 'S_plots_body',
+    style = dict(
+      # display = 'none',
+      transform = 'translateY(%spx)' % (200),
+    ),
   ),
   ##
 
@@ -116,4 +228,93 @@ layout = html.Div([
   )
 )
 
+#######################################################################
+#########################      CALLBACKS      #########################
+#######################################################################
 
+##
+# Celltype choice callbacks
+## 
+
+##
+# Prediction caching
+##
+@cache.memoize(timeout = cache_timeout)
+def bystander_predict_cache(seq, base_editor, celltype):
+  bystander_model.init_model(
+    base_editor = base_editor,
+    celltype = celltype,
+  )
+  pred_df, stats = bystander_model.predict(seq)
+  stats = pd.DataFrame(stats, index = [0])
+  return pred_df, stats
+
+@cache.memoize(timeout = cache_timeout)
+def efficiency_predict_cache(seq, base_editor, celltype):
+  efficiency_model.init_model(
+    base_editor = base_editor,
+    celltype = celltype,
+  )
+  pred_d = efficiency_model.predict(seq)
+  return pred_d
+
+##
+# Prediction callbacks
+##
+@app.callback(
+  Output('S_hidden-pred-signal_bystander', 'children'),
+  [Input('S_textbox', 'value'),
+   Input('S_hidden-chosen-base_editor', 'children'),
+   Input('S_hidden-chosen-celltype', 'children')])
+def bystander_predict(seq, base_editor, celltype):
+  seq = seq.upper()
+  bystander_predict_cache(seq, base_editor, celltype)
+  return '%s,%s,%s' % (seq, base_editor, celltype)
+
+@app.callback(
+  Output('S_hidden-pred-signal_efficiency', 'children'),
+  [Input('S_textbox', 'value'),
+   Input('S_hidden-chosen-base_editor', 'children'),
+   Input('S_hidden-chosen-celltype', 'children')])
+def efficiency_predict(seq, base_editor, celltype):
+  seq = seq.upper()
+  efficiency_predict_cache(seq, base_editor, celltype)
+  return '%s,%s,%s' % (seq, base_editor, celltype)
+
+##
+# Summary of predictions callbacks
+##
+
+##
+# General stats callbacks
+##
+
+## General stats text
+@app.callback(
+  Output('S_text-test_efficiency', 'children'),
+  [Input('S_hidden-pred-signal_efficiency', 'children')])
+def text_genstats_precision(signal):
+  seq, base_editor, celltype = signal.split(',')
+  pred_d = efficiency_predict_cache(seq, base_editor, celltype)
+  print(pred_d)
+  logit_score = pred_d['Predicted logit score']
+
+  return [
+    html.Span(f'Logit score: {logit_score}'),
+  ]
+
+##
+# Genotype table v2 callbacks
+##
+
+##
+# Download callbacks
+##
+
+##
+# Flask serving
+##
+
+##
+# Page link callback
+##

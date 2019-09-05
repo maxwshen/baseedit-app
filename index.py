@@ -6,7 +6,6 @@ from dash.dependencies import Input, Output, State
 import flask
 
 from app_holder import app
-# from apps import app_single, app_batch, app_gene, app_guide, app_about, app_termsofuse
 from apps import app_single
 
 
@@ -16,10 +15,6 @@ from apps import app_single
 app.layout = html.Div([
     html.Div(id = 'master-page-content'),
     dcc.Location(id = 'master-url', refresh = False),
-
-    # Hidden datatable for proper rendering
-    # https://community.plot.ly/t/display-tables-in-dash/4707/40?u=chriddyp
-    # html.Div(dt.DataTable(rows=[{}]), style={'display': 'none'})
 ])
 
 app.title = 'BE-Hive'
@@ -41,8 +36,6 @@ def display_page(pathname):
     return app_single.layout
   elif pathname[:len('/batch')] == '/batch':
     return app_batch.layout
-  elif pathname[:len('/gene')] == '/gene':
-    return app_gene.layout
   elif pathname[:len('/guide')] == '/guide':
     return app_guide.layout
   elif pathname[:len('/about')] == '/about':
@@ -55,30 +48,6 @@ def display_page(pathname):
 
 ###################################################################
 ###################################################################
-# CSS
-css_directory = os.getcwd()
-@app.server.route('/static/<stylesheet>')
-def serve_stylesheet(stylesheet):
-  if stylesheet not in stylesheets:
-    raise Exception(
-      '"{}" is excluded from the allowed static files'.format(
-        stylesheet
-      )
-    )
-  return flask.send_from_directory(css_directory, stylesheet)
-
-stylesheets = ['stylesheet.css']
-for stylesheet in stylesheets:
-  app.css.append_css({'external_url': '/static/{}'.format(stylesheet)})
-
-# As of 0.22.0, served automatically from /assets/
-
-# Favicon
-@app.server.route('/favicon.ico')
-def favicon():
-  return flask.send_from_directory(os.getcwd() + '/assets/', 'favicon.ico', mimetype = 'image/vnd.microsoft.icon')
-
-# As of 0.22.0, served automatically from /assets/
 
 # Google analytics tracker
 @app.server.route('/static/gtag.js')

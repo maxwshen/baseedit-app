@@ -129,6 +129,7 @@
     width: 50%;
     display: inline-block;
     vertical-align: middle;
+    transform: translateX(50%);
   }
 
   .generalstats_subtext_style {
