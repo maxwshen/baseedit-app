@@ -310,17 +310,20 @@ def update_summary_alignment_text(signal):
   seq, base_editor, celltype = signal.split(',')
   pred_df, stats = bystander_predict_cache(seq, base_editor, celltype)
 
+  ## Set up data
   top10 = pred_df.iloc[:10]
   fqs = top10['Predicted frequency']
   fq_strings = [''] + [f'{100*s:.1f}%' for s in fqs]
 
-  gt_cols = [col for col in pred_df.columns if col != 'Predicted frequency']
+  nt_cols = [col for col in pred_df.columns if col != 'Predicted frequency']
   p0idx = 19
   target_seq = stats['50-nt target sequence']
 
+  poswise_total = {col: sum(pred_df.loc[pred_df[col] != col[0], 'Predicted frequency']) for col in nt_cols}
+
+  ## Set up colors
   fill_cmap = {
     'match': 'white',
-    # 'match': 'rgba(230, 233, 236, 50)',
     'A': 'rgba(236, 67, 57, 255)',
     'C': 'rgba(239, 185, 32, 255)',
     'G': 'rgba(124, 184, 47, 255)',
@@ -328,24 +331,57 @@ def update_summary_alignment_text(signal):
   }
 
   font_cmap = {
-    # 'match': 'rgba(230, 233, 236, 50)',
-    # 'match': 'rgba(230, 233, 236, 255)',
     'match': 'rgba(208, 211, 214, 255)',
     'edited': 'black',
   }
 
+  ref_color_minmax = {
+    'A': [
+      'rgb(255, 224, 218)',
+      'rgb(221, 46, 31)',
+    ],
+    'C': [
+      'rgb(255, 242, 182)',
+      'rgb(230, 167, 0)',
+    ],
+    'G': [
+      'rgb(224, 244, 190)',
+      'rgb(96, 170, 20)',
+    ],
+  }
+
+  num_colors_in_ref = 666
+  num_colors_in_ref_resolution = 1 / num_colors_in_ref
+  ref_color_scales = {
+    nt: ['white'] + plotly.colors.n_colors(
+      ref_color_minmax[nt][0],
+      ref_color_minmax[nt][1],
+      num_colors_in_ref, 
+      colortype = 'rgb'
+    ) for nt in ref_color_minmax
+  }
+
+  ## Form table with colors
   fillcolors = []
   fontcolors = []
   poswise_cols = []
   for idx, nt in enumerate(target_seq):
+    pos = idx - p0idx
+    cand_col = f'{nt}{pos}'
+
     # first row is target_seq
     pos_col = nt  
-    col_fill_colors = [fill_cmap[nt]]
+    if cand_col not in nt_cols:
+      col_fill_colors = ['white']
+    else:
+      # col_fill_colors = [fill_cmap[nt]]
+      c_idx = int(poswise_total[cand_col] / num_colors_in_ref_resolution)
+      col_fill_colors = [ref_color_scales[nt][c_idx]]
     col_font_colors = ['black']
+
+    # rows for edited genotypes
     for jdx, row in top10.iterrows():
-      pos = idx - p0idx
-      cand_col = f'{nt}{pos}'
-      if cand_col not in gt_cols:
+      if cand_col not in nt_cols:
         # pos_col += '.'
         pos_col += nt
         col_fill_colors.append(fill_cmap['match'])
