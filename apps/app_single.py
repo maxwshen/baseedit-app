@@ -28,6 +28,9 @@ sys.path.append(app_fold)
 from be_predict_bystander import predict as bystander_model
 from be_predict_efficiency import predict as efficiency_model
 
+bystander_model.init_all_models()
+efficiency_model.init_all_models()
+
 try:
   os.mkdir('user-csvs/')
 except FileExistsError:
@@ -260,20 +263,23 @@ layout = html.Div([
 ##
 @cache.memoize(timeout = cache_timeout)
 def bystander_predict_cache(seq, base_editor, celltype):
-  bystander_model.init_model(
+  pred_df, stats = bystander_model.predict_given(
+    seq,
     base_editor = base_editor,
     celltype = celltype,
   )
-  pred_df, stats = bystander_model.predict(seq)
-  return pred_df, stats
+  pred_df = bystander_model.add_genotype_column(pred_df, stats)
+  filtered_cols = ['Predicted frequency', 'Genotype']
+  nt_cols = [col for col in pred_df if col not in filtered_cols]
+  return pred_df, stats, nt_cols
 
 @cache.memoize(timeout = cache_timeout)
 def efficiency_predict_cache(seq, base_editor, celltype):
-  efficiency_model.init_model(
+  pred_d = efficiency_model.predict_given(
+    seq,
     base_editor = base_editor,
     celltype = celltype,
   )
-  pred_d = efficiency_model.predict(seq)
   return pred_d
 
 ##
@@ -308,95 +314,147 @@ def efficiency_predict(seq, base_editor, celltype):
   ])
 def update_summary_alignment_text(signal):
   seq, base_editor, celltype = signal.split(',')
-  pred_df, stats = bystander_predict_cache(seq, base_editor, celltype)
+  pred_df, stats, nt_cols = bystander_predict_cache(seq, base_editor, celltype)
 
   ## Set up data
   top10 = pred_df.iloc[:10]
   fqs = top10['Predicted frequency']
   fq_strings = [''] + [f'{100*s:.1f}%' for s in fqs]
 
-  nt_cols = [col for col in pred_df.columns if col != 'Predicted frequency']
   p0idx = 19
   target_seq = stats['50-nt target sequence']
+  target_aas = list(lib.dna_to_aa(target_seq, 0, '+')) + [' ']
+
+  pred_df['Amino acid sequence'] = [lib.dna_to_aa(s, 0, '+') for s in pred_df['Genotype']]
 
   poswise_total = {col: sum(pred_df.loc[pred_df[col] != col[0], 'Predicted frequency']) for col in nt_cols}
 
   ## Set up colors
   fill_cmap = {
-    'match': 'white',
-    'A': 'rgba(236, 67, 57, 255)',
-    'C': 'rgba(239, 185, 32, 255)',
-    'G': 'rgba(124, 184, 47, 255)',
-    'T': 'rgba(0, 160, 220, 255)',
+    'match': 'rgba(255, 255, 255, 1)',
+    'A': 'rgba(236, 67, 57, 1)',
+    'C': 'rgba(239, 185, 32, 1)',
+    'G': 'rgba(124, 184, 47, 1)',
+    'T': 'rgba(0, 160, 220, 1)',
   }
 
   font_cmap = {
-    'match': 'rgba(208, 211, 214, 255)',
+    'match': 'rgba(208, 211, 214, 1)',
     'edited': 'black',
   }
 
-  ref_color_minmax = {
+  color_minmax = {
     'A': [
-      'rgb(255, 224, 218)',
-      'rgb(221, 46, 31)',
+      'rgba(255, 224, 218, 1)',
+      'rgba(221, 46, 31, 1)',
     ],
     'C': [
-      'rgb(255, 242, 182)',
-      'rgb(230, 167, 0)',
+      'rgba(255, 242, 182, 1)',
+      'rgba(230, 167, 0, 1)',
     ],
     'G': [
-      'rgb(224, 244, 190)',
-      'rgb(96, 170, 20)',
+      'rgba(224, 244, 190, 1)',
+      'rgba(96, 170, 20, 1)',
+    ],
+    'T': [
+      'rgba(207, 237, 251, 1)',
+      'rgba(0, 140, 201, 1)',
     ],
   }
 
   num_colors_in_ref = 666
   num_colors_in_ref_resolution = 1 / num_colors_in_ref
-  ref_color_scales = {
-    nt: ['white'] + plotly.colors.n_colors(
-      ref_color_minmax[nt][0],
-      ref_color_minmax[nt][1],
+  color_scales = {
+    nt: plotly.colors.n_colors(
+      color_minmax[nt][0],
+      color_minmax[nt][1],
       num_colors_in_ref, 
       colortype = 'rgb'
-    ) for nt in ref_color_minmax
+    ) for nt in color_minmax
   }
+
+  def get_color(scale, val, white_threshold = 0):
+    # val in [0, 1]
+    if val < white_threshold: return 'white'
+    c_idx = int(val / num_colors_in_ref_resolution)    
+    return scale[c_idx]
 
   ## Form table with colors
   fillcolors = []
   fontcolors = []
   poswise_cols = []
-  for idx, nt in enumerate(target_seq):
-    pos = idx - p0idx
+  for gt_idx, ref_nt in enumerate(target_seq):
+    aa_idx = gt_idx // 3
+    pos = gt_idx - p0idx
     cand_col = f'{nt}{pos}'
+    pos_col = []
+    col_fill_colors = []
+    col_font_colors = []
 
-    # first row is target_seq
-    pos_col = nt  
-    if cand_col not in nt_cols:
-      col_fill_colors = ['white']
+    # Testing amino acid seq
+    # Text
+    ref_aa = target_aas[aa_idx]
+    if gt_idx % 3 == 1:
+      pos_col.append(ref_aa)
     else:
-      # col_fill_colors = [fill_cmap[nt]]
-      c_idx = int(poswise_total[cand_col] / num_colors_in_ref_resolution)
-      col_fill_colors = [ref_color_scales[nt][c_idx]]
-    col_font_colors = ['black']
+      pos_col.append('')
+    # Color
+    # col_fill_colors.append('rgba(0, 160, 220, 0)')
+    col_fill_colors.append(lib.aa_cmap[ref_aa])
+    col_font_colors.append('black')
 
-    # rows for edited genotypes
+    # row for target_seq 
+    # Text
+    pos_col.append(ref_nt)
+    # Color
+    if cand_col not in nt_cols:
+      col_fill_colors.append('white')
+    else:
+      # col_fill_colors = [fill_cmap[ref_nt]]
+      tot_edit_frac = poswise_total[cand_col]
+      color_scale = color_scales[ref_nt]
+      col_fill_colors.append(get_color(color_scale, tot_edit_frac, white_threshold = 0.0015))
+    col_font_colors.append('black')
+
+    # rows for edited genotypes + aas
     for jdx, row in top10.iterrows():
-      if cand_col not in nt_cols:
-        # pos_col += '.'
-        pos_col += nt
+      pred_fq = row['Predicted frequency']
+      gt_seq = row['Genotype']
+      aa_seq = row['Amino acid sequence']
+
+      obs_nt = gt_seq[gt_idx]
+      obs_aa = aa_seq[aa_idx]
+
+      # Amino acid row
+      # Text
+      if gt_idx % 3 == 1:
+        pos_col.append(obs_aa)
+      else: 
+        pos_col.append('')
+      # Color
+      if obs_aa == ref_aa:
         col_fill_colors.append(fill_cmap['match'])
         col_font_colors.append(font_cmap['match'])
-        # pos_col += '•'
       else:
-        pos_col += row[cand_col]
-        row_nt = row[cand_col]
-        if row_nt == nt:
-          col_fill_colors.append(fill_cmap['match'])
-          col_font_colors.append(font_cmap['match'])
-        else:
-          col_fill_colors.append(fill_cmap[row_nt])
-          col_font_colors.append(font_cmap['edited'])
-    poswise_cols.append(list(pos_col))
+        col_fill_colors.append(lib.aa_cmap[obs_aa])
+        col_font_colors.append(font_cmap['edited'])
+
+      # Genotype row
+      # Text
+      # Color
+      pos_col.append(obs_nt)
+      if obs_nt == ref_nt:
+        col_fill_colors.append(fill_cmap['match'])
+        col_font_colors.append(font_cmap['match'])
+      else:
+        # col_fill_colors.append(fill_cmap[obs_nt])
+        color_scale = color_scales[obs_nt]
+        col_fill_colors.append(get_color(color_scale, pred_fq))
+        col_font_colors.append(font_cmap['edited'])
+
+
+    # Finished iterating over one column
+    poswise_cols.append(pos_col)
     fillcolors.append(col_fill_colors)
     fontcolors.append(col_font_colors)
 
@@ -416,9 +474,9 @@ def update_summary_alignment_text(signal):
         values = poswise_cols + [fq_strings],
         align = ['center'] * len(poswise_cols) + ['right'], 
         fill = dict(
-          color = fillcolors + ['rgb(255, 255, 255)'] * len(fq_strings),
+          color = fillcolors + ['rgba(255, 255, 255, 1)'] * len(fq_strings),
         ),
-        line = dict(width = 1, color = 'rgba(255, 255, 255, 130)'),
+        line = dict(width = 0),
         font = dict(
           family = 'monospace',
           color = fontcolors + ['black'] * len(fq_strings),

@@ -333,6 +333,118 @@ def estimate_pam_freq(pam):
     factor *= ( len(mapper[char]) / 4)
   return factor
 
+# codon_table = {
+#   'Ala': ['GCT', 'GCC', 'GCA', 'GCG'],
+#   'Leu': ['TTA', 'TTG', 'CTT', 'CTC', 'CTA', 'CTG'],
+#   'Arg': ['CGT', 'CGC', 'CGA', 'CGG', 'AGA', 'AGG'],
+#   'Lys': ['AAA', 'AAG'],
+#   'Asn': ['AAT', 'AAC'], 
+#   'Met': ['ATG'],
+#   'Asp': ['GAT', 'GAC'], 
+#   'Phe': ['TTT', 'TTC'],
+#   'Cys': ['TGT', 'TGC'],
+#   'Pro': ['CCT', 'CCC', 'CCA', 'CCG'],
+#   'Gln': ['CAA', 'CAG'],
+#   'Ser': ['TCT', 'TCC', 'TCA', 'TCG', 'AGT', 'AGC'],
+#   'Glu': ['GAA', 'GAG'],
+#   'Thr': ['ACT', 'ACC', 'ACA', 'ACG'],
+#   'Gly': ['GGT', 'GGC', 'GGA', 'GGG'],
+#   'Trp': ['TGG'],
+#   'His': ['CAT', 'CAC'], 
+#   'Tyr': ['TAT', 'TAC'],
+#   'Ile': ['ATT', 'ATC', 'ATA'],
+#   'Val': ['GTT', 'GTC', 'GTA', 'GTG'],
+#   'Stop': ['TAA', 'TGA', 'TAG'],
+# }
+codon_table = {
+  'A': ['GCT', 'GCC', 'GCA', 'GCG'],
+  'L': ['TTA', 'TTG', 'CTT', 'CTC', 'CTA', 'CTG'],
+  'R': ['CGT', 'CGC', 'CGA', 'CGG', 'AGA', 'AGG'],
+  'K': ['AAA', 'AAG'],
+  'N': ['AAT', 'AAC'], 
+  'M': ['ATG'],
+  'D': ['GAT', 'GAC'], 
+  'F': ['TTT', 'TTC'],
+  'C': ['TGT', 'TGC'],
+  'P': ['CCT', 'CCC', 'CCA', 'CCG'],
+  'Q': ['CAA', 'CAG'],
+  'S': ['TCT', 'TCC', 'TCA', 'TCG', 'AGT', 'AGC'],
+  'E': ['GAA', 'GAG'],
+  'T': ['ACT', 'ACC', 'ACA', 'ACG'],
+  'G': ['GGT', 'GGC', 'GGA', 'GGG'],
+  'W': ['TGG'],
+  'H': ['CAT', 'CAC'], 
+  'Y': ['TAT', 'TAC'],
+  'I': ['ATT', 'ATC', 'ATA'],
+  'V': ['GTT', 'GTC', 'GTA', 'GTG'],
+  '*': ['TAA', 'TGA', 'TAG'],
+}
+def dna_to_aa(dna, frame, strand):
+  '''
+    frame in [0, 1, 2]
+    strand in ['+', '-']
+  '''
+  dna = dna.upper()
+  aas = ''
+  if strand == '-': 
+    dna = revcomp(dna)
+
+  dna = dna[frame:]
+  for idx in range(0, len(dna), 3):
+    codon = dna[idx : idx + 3]
+    if len(codon) != 3: break
+    for aa in codon_table:
+      if codon in codon_table[aa]:
+        aas += aa
+        break
+  return aas
+
+
+###############################################
+# Colors
+###############################################
+name_to_color = {
+  'red': 'rgb(236, 67, 57)',
+  'orange': 'rgb(244, 123, 22)',
+  'light green': 'rgb(174, 214, 119)',
+  'green': 'rgb(124, 184, 47)',
+  'dark green': 'rgb(78, 143, 19)',
+  'blue': 'rgb(0, 174, 179)',
+  'dark blue': 'rgb(0, 136, 145)',
+  'lilac': 'rgb(191, 171, 230)',
+  'pink': 'rgb(243, 113, 175)',
+  'gray': 'rgb(134, 137, 140)',
+}
+
+aa_cmap = {
+  'A': 'rgba(174, 214, 119, 0.5)',
+  'G': 'rgba(199, 229, 154, 0.5)',
+  'C': 'rgba(149, 199, 83, 0.5)',
+  'N': 'rgba(124, 184, 47, 0.5)',
+  'D': 'rgba(96, 170, 20, 0.5)',
+  'Q': 'rgba(78, 143, 19, 0.5)',
+  'E': 'rgba(59, 117, 71, 0.5)',
+  'S': 'rgba(236, 67, 57, 0.5)',
+  'T': 'rgba(241, 109, 100, 0.5)',
+  'R': 'rgba(244, 123, 22, 0.5)',
+  'K': 'rgba(245, 150, 64, 0.5)',
+  'M': 'rgba(134, 137, 140, 0.5)',
+  'L': 'rgba(0, 174, 179, 0.5)',
+  'I': 'rgba(53, 190, 193, 0.5)',
+  'V': 'rgba(0, 160, 220, 0.5)',
+  'H': 'rgba(0, 140, 201, 0.5)',
+  'F': 'rgba(216, 204, 244, 0.5)',
+  'Y': 'rgba(191, 171, 230, 0.5)',
+  'W': 'rgba(165, 137, 217, 0.5)',
+  'P': 'rgba(243, 113, 175, 0.5)',
+  '*': 'rgba(115, 118, 121, 0.5)',
+  ' ': 'white',
+}
+
+###############################################
+# 
+###############################################
+
 ###############################################
 # Alignment text presentation
 ###############################################
