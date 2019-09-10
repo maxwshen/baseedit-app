@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import, division
 from __future__ import print_function
-import sys, string, pickle, subprocess, os, datetime, gzip, time
+import sys, string, pickle, subprocess, os, datetime, gzip, time, copy
 from collections import defaultdict, OrderedDict
 import glob
 import numpy as np, pandas as pd
@@ -28,6 +28,8 @@ for idx, row in models_design.iterrows():
   inp_set = (row['Public base editor'], row['Celltype'])
   model_nm = row['Model name']
   model_nm_mapper[inp_set] = model_nm
+
+model_storage = dict()
 
 '''
   Intended usage: 
@@ -139,6 +141,48 @@ def __featurize(seq):
   # return (np.array(X_all), param_nms)
   return np.array(curr_x).reshape(1, -1)
 
+####################################################################
+# Web app specific 
+####################################################################
+def init_all_models():
+  global model_storage
+  for idx, row in models_design.iterrows():
+    editor = row['Public base editor']
+    celltype = row['Celltype']
+    package = init_model(base_editor = editor, celltype = celltype)
+    model_storage[(editor, celltype)] = package
+  return
+
+def predict_given(seq, base_editor = '', celltype = '', mean = None, std = 2):
+  # Set up variables
+  key = (base_editor, celltype)
+  assert key in model_storage, 'Call init_all_models() first'
+
+  global model
+  global model_settings
+
+  hhparams = model_storage[key]
+  model = hhparams['model']
+  model_settings = hhparams['model_settings']
+
+  # Call predict normally
+  assert len(seq) == 50, f'Error: Sequence provided is {len(seq)}, must be 50 (positions -19 to 30 w.r.t. gRNA (positions 1-20)'
+
+  assert init_flag, f'Call .init_model() first.'
+  seq = seq.upper()
+
+  x = __featurize(seq)
+  y = float(model.predict(x))
+
+  conv_y = np.nan
+  if mean is not None:
+    assert std > 0, 'Error: Provided std is non-positive'
+    conv_y = expit(y * std + mean)
+
+  return {
+    'Predicted logit score': y,
+    'Predicted fraction of sequenced reads with base editing activity': conv_y,
+  }
 
 ####################################################################
 # Public 
@@ -253,5 +297,8 @@ def init_model(base_editor = '', celltype = ''):
 
   global init_flag
   init_flag = True
-  return
+  return {
+      'model': copy.deepcopy(model),
+      'model_settings': copy.deepcopy(model_settings),
+    }
 
