@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import, division
 from __future__ import print_function
-import sys, string, pickle, subprocess, os, datetime, gzip, time
+import sys, string, pickle, subprocess, os, datetime, gzip, time, copy
 from collections import defaultdict, OrderedDict
 import glob
 import numpy as np, pandas as pd
@@ -43,6 +43,8 @@ for idx, row in models_design.iterrows():
   model_nm = f"{row['Celltype']}_12kChar_{row['Internal base editor']}_{row['Model name']}"
   model_nm_mapper[inp_set] = model_nm
 
+# Web app specific
+model_storage = dict()
 
 '''
   Usage: 
@@ -232,6 +234,7 @@ def __init_editor_profile_nt_cols():
     Set global setting for current editor 
   '''
   global editor_profile_nt_cols
+  editor_profile_nt_cols = set()
   editor_type = model_settings['__base_editor_type']
 
   editor_profile_df = pd.read_csv(curr_fold + '/editor_profiles.csv', index_col = 0)
@@ -288,6 +291,87 @@ def __load_model_hyperparameters():
         best_val_loss = val_loss
 
   return model_hyperparameters, int(x_dim), int(y_mask_dim), int(train_test_id), best_epoch
+
+####################################################################
+# Web app specific 
+####################################################################
+
+def init_all_models():
+  global model_storage
+  for idx, row in models_design.iterrows():
+    editor = row['Public base editor']
+    celltype = row['Celltype']
+    package = init_model(base_editor = editor, celltype = celltype)
+    model_storage[(editor, celltype)] = package
+  return
+
+def predict_given(seq, base_editor = '', celltype = ''):
+  # Set up variables
+  key = (base_editor, celltype)
+  assert key in model_storage, 'Call init_all_models() first'
+
+  global editor_profile_nt_cols
+  global core_substrate_nt
+  global model
+  global model_script
+  global model_settings
+
+  hhparams = model_storage[key]
+  model = hhparams['model']
+  model_settings = hhparams['model_settings']
+  model_hyperparameters = hhparams['model_hyperparameters']
+  x_dim = hhparams['x_dim']
+  y_mask_dim = hhparams['y_mask_dim']
+  editor_profile_nt_cols = hhparams['editor_profile_nt_cols']
+  core_substrate_nt = hhparams['core_substrate_nt']
+
+  # Get model script, cannot copy/deepcopy
+  if model_settings['__base_editor_type'] == 'CBE':
+    import model_CBE as model_script
+  else:
+    import model_ABE as model_script
+  model_script.parse_custom_hyperparams(model_hyperparameters)
+
+  # Call predict normally
+  assert len(seq) == 50, f'Error: Sequence provided is {len(seq)}, must be 50 (positions -19 to 30 w.r.t. gRNA (positions 1-20)'
+  assert init_flag, f'Call .init_model() first.'
+  seq = seq.upper()
+
+  ## Call model
+  query_df = __seq_to_query_df(seq)
+  pred_df = query_df
+
+  dataset = model_script.BaseEditing_Dataset(
+    x = [seq], 
+    y = [query_df], 
+    nms = [0], 
+    training = False
+  )
+  sample = dataset[0]
+
+  with torch.no_grad():
+    pred_log_probs = model(
+      sample['x'],
+      sample['y_mask'],
+      sample['target'],
+      sample['editable_index_info']
+    )
+  pred_probs = np.exp(pred_log_probs)
+  pred_df['Predicted frequency'] = pred_probs
+  pred_df = pred_df.sort_values(by = 'Predicted frequency', ascending = False)
+  pred_df = pred_df.reset_index(drop = True)
+
+
+  ## Get stats
+  stats = {
+    'Total predicted probability': sum(pred_df['Predicted frequency']),
+    '50-nt target sequence': seq,
+    'Assumed protospacer sequence': seq[20:40],
+    'Celltype': model_settings['celltype'],
+    'Base editor': model_settings['base_editor'],
+  }
+
+  return pred_df, stats
 
 ####################################################################
 # Public 
@@ -388,5 +472,13 @@ def init_model(base_editor = '', celltype = ''):
 
   global init_flag
   init_flag = True
-  return
+  return {
+      'model': copy.deepcopy(model),
+      'model_settings': copy.deepcopy(model_settings),
+      'model_hyperparameters': copy.deepcopy(model_hyperparameters),
+      'editor_profile_nt_cols': copy.deepcopy(editor_profile_nt_cols),
+      'x_dim': copy.deepcopy(x_dim),
+      'y_mask_dim': copy.deepcopy(y_mask_dim),
+      'core_substrate_nt': copy.deepcopy(core_substrate_nt),
+    }
 
