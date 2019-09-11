@@ -86,6 +86,10 @@ layout = html.Div([
         id = 'S_hidden-chosen-celltype',
         children = 'mES',
       ),
+      html.Div(
+        id = 'S_hidden-chosen-aa_frame',
+        children = '1,+',
+      ),
 
       dcc.Location(
         id = 'S_url',
@@ -134,6 +138,60 @@ layout = html.Div([
           whiteSpace = 'nowrap',
           overflowX = 'auto',
         ),
+      ),
+
+      ###################################################
+      # Options
+      ###################################################
+      html.Div(
+        [
+          html.Div('',
+            className = 'three columns',
+          ),
+
+          dcc.Dropdown(
+            id = 'S_editor-dropdown',
+            options = lib.editor_celltype_dropdown_options,
+            value = 'BE4, mES',
+            searchable = True,
+            clearable = False,
+            style = dict(
+              fontFamily = 'monospace',
+              fontSize = 16,
+            ),
+            className = 'three columns'
+          ),
+
+          dcc.Dropdown(
+            id = 'S_aa_frame-dropdown',
+            options = [
+              {'label': 'None', 'value': 'None'},
+              {'label': 'Frame 1, + strand', 'value': '1,+'},
+              {'label': 'Frame 2, + strand', 'value': '2,+'},
+              {'label': 'Frame 3, + strand', 'value': '3,+'},
+              {'label': 'Frame 1, - strand', 'value': '1,-'},
+              {'label': 'Frame 2, - strand', 'value': '2,-'},
+              {'label': 'Frame 3, - strand', 'value': '3,-'},
+            ],
+            value = 'None',
+            searchable = True,
+            clearable = False,
+            style = dict(
+              fontFamily = 'monospace',
+              fontSize = 16,
+            ),
+            className = 'three columns'
+          ),
+
+          html.Div('',
+            className = 'three columns',
+          ),
+        ], 
+        style = dict(
+          marginBottom = '5px',
+          marginTop = '10px',
+        ),
+        className = 'row',
       ),
 
       # Empty div for bottom margin in header
@@ -295,8 +353,36 @@ layout = html.Div([
 #######################################################################
 
 ##
-# Celltype choice callbacks
+# Hidden data callbacks
 ## 
+@app.callback(
+  Output('S_hidden-chosen-base_editor', 'children'),
+  [Input('S_editor-dropdown', 'value')])
+def update_editor_choice(val):
+  [editor, celltype] = [s.strip() for s in val.split(',')]
+  return editor
+
+@app.callback(
+  Output('S_hidden-chosen-celltype', 'children'),
+  [Input('S_editor-dropdown', 'value')])
+def update_celltype_choice(val):
+  [editor, celltype] = [s.strip() for s in val.split(',')]
+  return celltype
+
+@app.callback(
+  Output('S_hidden-chosen-aa_frame', 'children'),
+  [Input('S_aa_frame-dropdown', 'value')])
+def update_aaframe_choice(val):
+  '''
+    None
+    1,+
+    2,+
+    3,+
+    1,-
+    2,-
+    3,-
+  '''
+  return val
 
 ##
 # Prediction caching
@@ -462,32 +548,74 @@ def update_gt_table(signal):
 @app.callback(
   Output('S_bystander_aa-table', 'figure'),
   [Input('S_hidden-pred-signal_bystander', 'children'),
+   Input('S_hidden-chosen-aa_frame', 'children'),
   ])
-def update_aa_table(signal):
+def update_aa_table(signal, aa_frame_txt):
   seq, base_editor, celltype = signal.split(',')
   pred_df, stats, nt_cols = bystander_predict_cache(seq, base_editor, celltype)
+  if aa_frame_txt == 'None': aa_frame_txt = '1,+'
+  aa_frame = int(aa_frame_txt[0]) - 1
+  aa_strand = aa_frame_txt[-1]
 
   p0idx = 19
   target_seq = stats['50-nt target sequence']
-  target_aas = list(lib.dna_to_aa(target_seq, 0, '+')) + [' ']
-  pred_df['Amino acid sequence'] = [lib.dna_to_aa(s, 0, '+') + ' ' for s in pred_df['Genotype']]
+  target_aas = lib.dna_to_aa(target_seq, aa_frame, aa_strand)
+  pred_df['Amino acid sequence'] = [lib.dna_to_aa(s, aa_frame, aa_strand) for s in pred_df['Genotype']]
+  aa_start_gap, aa_end_gap = lib.get_aa_display_start_idx(target_seq, aa_frame, aa_strand)
+
+  # Whitespace ref AA
+  whitespaced_target_aas = [' '] * aa_start_gap
+  fills_target_aas = ['white'] * aa_start_gap
+  for aa in target_aas:
+    whitespaced_target_aas.append(f' {aa} ')
+    fills_target_aas += [lib.aa_cmap[aa]] * 3
+  whitespaced_target_aas +=[' '] * aa_end_gap
+  fills_target_aas += ['white'] * aa_end_gap
+  whitespaced_target_aas = ''.join(whitespaced_target_aas)
 
   ## Set up data
   aa_fq_df = pred_df[['Amino acid sequence', 'Predicted frequency']].groupby('Amino acid sequence').agg(sum).reset_index().sort_values(by = 'Predicted frequency', ascending = False)
   aa_fq_df = aa_fq_df.iloc[:10]
   aa_fq_df = aa_fq_df[aa_fq_df['Predicted frequency'] >= 0.01]
 
+  # Form amino acid whitespaced seqs, fill colors, font colors
   aa_to_fq = {}
   aa_to_gts = {}
+  aa_to_fillcolors = {}
+  aa_to_fontcolors = {}
   num_rows = 0
   for idx, row in aa_fq_df.iterrows():
     aa_seq = row['Amino acid sequence']
-    aa_to_fq[aa_seq] = row['Predicted frequency']
+
+    whitespaced_aa_seq = [' '] * aa_start_gap
+    fills_aas = ['white'] * aa_start_gap
+    fontcolors_aas = ['white'] * aa_start_gap
+    for jdx, aa in enumerate(aa_seq):
+      target_aa = target_aas[jdx]
+      if aa == target_aa:
+        font_color = lib.font_cmap['match']
+        fill_color = 'white'
+      else:
+        font_color = lib.font_cmap['edited']
+        fill_color = lib.aa_cmap[aa]
+      whitespaced_aa_seq.append(f' {aa} ')
+      fills_aas += [fill_color] * 3
+      fontcolors_aas += [font_color] * 3
+    whitespaced_aa_seq +=[' '] * aa_end_gap
+    fills_aas += ['white'] * aa_end_gap
+    fontcolors_aas += ['white'] * aa_end_gap
+    whitespaced_aa_seq = ''.join(whitespaced_aa_seq)
+    print(aa_seq, whitespaced_aa_seq, fills_aas, fontcolors_aas)
+
+    aa_to_fq[whitespaced_aa_seq] = row['Predicted frequency']
     num_rows += 2
+
+    aa_to_fillcolors[whitespaced_aa_seq] = fills_aas
+    aa_to_fontcolors[whitespaced_aa_seq] = fontcolors_aas
 
     dfs = pred_df[pred_df['Amino acid sequence'] == aa_seq]
     dfs = dfs[dfs['Predicted frequency'] >= 0.005].sort_values(by = 'Predicted frequency', ascending = False)
-    aa_to_gts[aa_seq] = list(zip(list(dfs['Genotype']), list(dfs['Predicted frequency'])))
+    aa_to_gts[whitespaced_aa_seq] = list(zip(list(dfs['Genotype']), list(dfs['Predicted frequency'])))
     num_rows += len(dfs)
 
   poswise_total = {col: sum(pred_df.loc[pred_df[col] != col[0], 'Predicted frequency']) for col in nt_cols}
@@ -497,26 +625,20 @@ def update_aa_table(signal):
   fontcolors = []
   poswise_cols = []
   for gt_idx, ref_nt in enumerate(target_seq):
-    aa_idx = gt_idx // 3
     pos = gt_idx - p0idx
     cand_col = f'{ref_nt}{pos}'
     pos_col = []
     col_fill_colors = []
     col_font_colors = []
 
-    # Testing amino acid seq
-    # Text
-    ref_aa = target_aas[aa_idx]
-    if gt_idx % 3 == 1:
-      pos_col.append(ref_aa)
-    else:
-      pos_col.append('')
-    # Color
-    # col_fill_colors.append('rgba(0, 160, 220, 0)')
-    col_fill_colors.append(lib.aa_cmap[ref_aa])
+    # Ref. amino acid seq row
+    # Text and text
+    ref_aa = whitespaced_aa_seq[gt_idx]
+    pos_col.append(ref_aa)
+    col_fill_colors.append(fills_target_aas[gt_idx])
     col_font_colors.append('black')
 
-    # row for target_seq 
+    # Ref. target_seq row
     # Text
     pos_col.append(ref_nt)
     # Color
@@ -536,21 +658,12 @@ def update_aa_table(signal):
     # rows for edited genotypes + aas
     for aa_seq in aa_to_fq:
       aa_fq = aa_to_fq[aa_seq]
-      obs_aa = aa_seq[aa_idx]
 
       # Amino acid row
-      # Text
-      if gt_idx % 3 == 1:
-        pos_col.append(obs_aa)
-      else: 
-        pos_col.append('')
-      # Color
-      if obs_aa == ref_aa:
-        col_fill_colors.append('white')
-        col_font_colors.append(lib.font_cmap['match'])
-      else:
-        col_fill_colors.append(lib.aa_cmap[obs_aa])
-        col_font_colors.append(lib.font_cmap['edited'])
+      # Text and color
+      pos_col.append(aa_seq[gt_idx])
+      col_fill_colors.append(aa_to_fillcolors[aa_seq][gt_idx])
+      col_font_colors.append(aa_to_fontcolors[aa_seq][gt_idx])
 
       for (gt_seq, gt_fq) in aa_to_gts[aa_seq]:
         obs_nt = gt_seq[gt_idx]

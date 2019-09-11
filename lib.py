@@ -1,5 +1,7 @@
-import numpy as np
-import plotly
+import numpy as np, pandas as pd
+import plotly, os, sys
+
+app_fold = os.path.dirname(os.path.realpath(__file__)) + '/'
 
 ###############################################
 # Functions and variables for URL shortening
@@ -275,6 +277,23 @@ def encode_url_path_gene(genome_build, gene, celltype, chosen_columns, column_op
   return '/gene_%s' % ('_'.join([str(s) for s in items]))
 
 ###############################################
+# Data management
+###############################################
+bystander_models_design = pd.read_csv(app_fold + f'be_predict_bystander/models.csv', index_col = 0)
+editor_celltype_dropdown_options = []
+'''
+  options = [
+    {'label': '1-bp insertions', 'value': '1-bp insertions'},
+'''
+for idx, row in bystander_models_design.iterrows():
+  editor = row['Public base editor']
+  celltype = row['Celltype']
+  editor_celltype_dropdown_options.append({
+    'label': f'{editor}, {celltype}',
+    'value': f'{editor}, {celltype}',
+  })
+
+###############################################
 # Compbio operations
 ###############################################
 
@@ -390,16 +409,45 @@ def dna_to_aa(dna, frame, strand):
   if strand == '-': 
     dna = revcomp(dna)
 
+  start_gap = frame
   dna = dna[frame:]
+  end_gap = 0
   for idx in range(0, len(dna), 3):
     codon = dna[idx : idx + 3]
-    if len(codon) != 3: break
+    if len(codon) != 3: 
+      end_gap = len(codon)
+      break
     for aa in codon_table:
       if codon in codon_table[aa]:
         aas += aa
         break
+
+  if strand == '-':
+    aas = aas[::-1]
   return aas
 
+def get_aa_display_start_idx(dna, frame, strand):
+  '''
+    frame in [0, 1, 2]
+    strand in ['+', '-']
+  '''
+  dna = dna.upper()
+  aas = ''
+  if strand == '-': 
+    dna = revcomp(dna)
+
+  start_gap = frame
+  dna = dna[frame:]
+  end_gap = 0
+  for idx in range(0, len(dna), 3):
+    codon = dna[idx : idx + 3]
+    if len(codon) != 3: 
+      end_gap = len(codon)
+      break
+
+  if strand == '-':
+    start_gap, end_gap = end_gap, start_gap
+  return start_gap, end_gap
 
 ###############################################
 # Colors
