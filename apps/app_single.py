@@ -88,7 +88,7 @@ layout = html.Div([
       ),
       html.Div(
         id = 'S_hidden-chosen-aa_frame',
-        children = '1,+',
+        children = 'None',
       ),
 
       dcc.Location(
@@ -268,18 +268,18 @@ layout = html.Div([
       # Module: Bystander, AA
       ###################################################
       html.Div([
-        # header
         html.Div([
+          # header
           html.Div([
-            html.Strong('Base editing outcomes: Amino acid sequence')
+            html.Div([
+              html.Strong('Base editing outcomes: Amino acid sequence')
+              ],
+              className = 'module_header_text'),
             ],
-            className = 'module_header_text'),
-          ],
-          className = 'module_header'
-        ),
+            className = 'module_header'
+          ),
 
-        html.Div(
-          [
+          html.Div([
             # Text table
             dcc.Graph(
               id = 'S_bystander_aa-table',
@@ -289,47 +289,29 @@ layout = html.Div([
                 displayModeBar = False,
                 staticPlot = True,
               ),
-              # style = dict(
-              #   # should be variable probably
-              #   # height = 500,
-              #   width = 629,
-              # ),
               className = 'twelve columns',
             ),
+            # Bar plot
 
-          ],
-          className = 'row',
-        ),
-
-      ], className = 'module_style',
-      ),
-
-      # Animate bottom
-      html.Div([
-
-        ###################################################
-        # Module: Single base editor
-        ###################################################
-        html.Div([
-          # header
-          html.Div([
-            html.Div([
-              html.Strong('Ex: Single base editor')
-              ],
-              className = 'module_header_text'),
             ],
-            className = 'module_header'
+            className = 'row',
           ),
-        ], className = 'module_style',
-        ),
 
-        ],
-        id = 'S_plots_body',
-        style = dict(
-          display = 'none',
+          ], 
+          className = 'module_style', 
         ),
+        ], 
+        id = 'S_bystander_module_container',
+        style = {'display': 'none'},
         className = 'animate-bottom',
       ),
+
+      ###################################################
+      # Module
+      ###################################################
+      html.Div([
+        ],
+      )
 
     ],
     # body style
@@ -553,7 +535,7 @@ def update_gt_table(signal):
 def update_aa_table(signal, aa_frame_txt):
   seq, base_editor, celltype = signal.split(',')
   pred_df, stats, nt_cols = bystander_predict_cache(seq, base_editor, celltype)
-  if aa_frame_txt == 'None': aa_frame_txt = '1,+'
+  # if aa_frame_txt == 'None': return []
   aa_frame = int(aa_frame_txt[0]) - 1
   aa_strand = aa_frame_txt[-1]
 
@@ -605,7 +587,6 @@ def update_aa_table(signal, aa_frame_txt):
     fills_aas += ['white'] * aa_end_gap
     fontcolors_aas += ['white'] * aa_end_gap
     whitespaced_aa_seq = ''.join(whitespaced_aa_seq)
-    print(aa_seq, whitespaced_aa_seq, fills_aas, fontcolors_aas)
 
     aa_to_fq[whitespaced_aa_seq] = row['Predicted frequency']
     num_rows += 2
@@ -747,6 +728,18 @@ def update_aa_table(signal, aa_frame_txt):
       ),
     ),
   )
+
+@app.callback(
+  Output('S_bystander_module_container', 'style'),
+  [Input('S_hidden-chosen-aa_frame', 'children')],
+  [State('S_bystander_module_container', 'style')])
+def show_hide_aa_module(aa_frame_text, prev_style):
+  if aa_frame_text == 'None':
+    prev_style['display'] = 'none'
+  else:
+    if 'display' in prev_style:
+      del prev_style['display']
+  return prev_style
 
 
 ##
