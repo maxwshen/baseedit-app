@@ -71,23 +71,23 @@ layout = html.Div([
   html.Div(
     [
       html.Div(
-        id = 'S_hidden-pred-signal_bystander',
+        id = 'S_hidden_pred_signal_bystander',
         children = 'init'
       ),
       html.Div(
-        id = 'S_hidden-pred-signal_efficiency',
+        id = 'S_hidden_pred_signal_efficiency',
         children = 'init'
       ),
       html.Div(
-        id = 'S_hidden-chosen-base_editor',
+        id = 'S_hidden_chosen_base_editor',
         children = 'BE4',
       ),
       html.Div(
-        id = 'S_hidden-chosen-celltype',
+        id = 'S_hidden_chosen_celltype',
         children = 'mES',
       ),
       html.Div(
-        id = 'S_hidden-chosen-aa_frame',
+        id = 'S_hidden_chosen_aa_frame',
         children = 'None',
       ),
 
@@ -104,103 +104,109 @@ layout = html.Div([
   ##
   # Header
   ##
-  html.Div(
-    [
-      ###################################################
-      # Upper header
-      ###################################################
-      header.get_navigation_header('single'),
+  html.Div([
+    ###################################################
+    # Upper header
+    ###################################################
+    header.get_navigation_header('single'),
 
-      ###################################################
-      # Sequence boxes
-      ###################################################
-      html.Div([
-        html.Div(
-          [
-            dcc.Input(
-              id = 'S_textbox', 
-              size = '28',
-              value = default_text,
-              type = 'text',
-              autoFocus = True,
-              style = dict(
-                fontFamily = 'monospace',
-                fontSize = 16,
-                # float = 'left',
-                transform = 'translateX(50%)',
-              ),
-            )
-          ],
-          className = 'dna_textbox',
-        ),
-        ], style = dict(
-          verticalAlign = 'center',
-          whiteSpace = 'nowrap',
-          overflowX = 'auto',
-        ),
-      ),
-
-      ###################################################
-      # Options
-      ###################################################
+    ###################################################
+    # Row: Sequence boxes
+    ###################################################
+    html.Div([
+      # Item
       html.Div(
         [
-          html.Div('',
-            className = 'three columns',
-          ),
-
-          dcc.Dropdown(
-            id = 'S_editor-dropdown',
-            options = lib.editor_celltype_dropdown_options,
-            value = 'BE4, mES',
-            searchable = True,
-            clearable = False,
+          dcc.Input(
+            id = 'S_textbox', 
+            size = '28',
+            value = default_text,
+            type = 'text',
+            autoFocus = True,
             style = dict(
               fontFamily = 'monospace',
               fontSize = 16,
+              # float = 'left',
+              transform = 'translateX(50%)',
             ),
-            className = 'three columns'
-          ),
-
-          dcc.Dropdown(
-            id = 'S_aa_frame-dropdown',
-            options = [
-              {'label': 'None', 'value': 'None'},
-              {'label': 'Frame 1, + strand', 'value': '1,+'},
-              {'label': 'Frame 2, + strand', 'value': '2,+'},
-              {'label': 'Frame 3, + strand', 'value': '3,+'},
-              {'label': 'Frame 1, - strand', 'value': '1,-'},
-              {'label': 'Frame 2, - strand', 'value': '2,-'},
-              {'label': 'Frame 3, - strand', 'value': '3,-'},
-            ],
-            value = 'None',
-            searchable = True,
-            clearable = False,
-            style = dict(
-              fontFamily = 'monospace',
-              fontSize = 16,
-            ),
-            className = 'three columns'
-          ),
-
-          html.Div('',
-            className = 'three columns',
-          ),
-        ], 
-        style = dict(
-          marginBottom = '5px',
-          marginTop = '10px',
-        ),
-        className = 'row',
+          )
+        ],
+        className = 'dna_textbox',
       ),
 
-      # Empty div for bottom margin in header
-      html.Div(
-        [], 
+      ], style = dict(
+        verticalAlign = 'center',
+        whiteSpace = 'nowrap',
+        overflowX = 'auto',
+      ),
+    ),
+
+    ###################################################
+    # Row: Options
+    ###################################################
+    html.Div([
+      # Item
+      html.Div('',
+        className = 'three columns',
+      ),
+
+      # Item
+      dcc.Dropdown(
+        id = 'S_editor_dropdown',
+        options = lib.editor_celltype_dropdown_options,
+        value = 'BE4, mES',
+        searchable = True,
+        clearable = False,
         style = dict(
-          marginBottom = '10px',
+          fontFamily = 'monospace',
+          fontSize = 16,
         ),
-      )
+        className = 'three columns'
+      ),
+
+      # Item
+      dcc.Dropdown(
+        id = 'S_aa_frame_dropdown',
+        options = [
+          {'label': 'None', 'value': 'None'},
+          {'label': 'Frame 1, + strand', 'value': '1,+'},
+          {'label': 'Frame 2, + strand', 'value': '2,+'},
+          {'label': 'Frame 3, + strand', 'value': '3,+'},
+          {'label': 'Frame 1, - strand', 'value': '1,-'},
+          {'label': 'Frame 2, - strand', 'value': '2,-'},
+          {'label': 'Frame 3, - strand', 'value': '3,-'},
+        ],
+        value = 'None',
+        searchable = True,
+        clearable = False,
+        style = dict(
+          fontFamily = 'monospace',
+          fontSize = 16,
+        ),
+        className = 'three columns'
+      ),
+
+      # Item
+      html.Div('',
+        className = 'three columns',
+      ),
+
+      ], 
+      style = dict(
+        marginBottom = '5px',
+        marginTop = '10px',
+      ),
+      className = 'row',
+    ),
+
+    # Row
+    # Empty div for bottom margin in header
+    html.Div(
+      [], 
+      style = dict(
+        marginBottom = '10px',
+      ),
+    )
 
     ],
     style = dict(
@@ -218,100 +224,196 @@ layout = html.Div([
   ##
   # Body / plots
   ##
-  html.Div(
-    [
-      # First (not bottom animated)
-      ###################################################
-      # Module: Bystander, DNA
-      ###################################################
+  html.Div([
+    ###################################################
+    # Module: Efficiency
+    ###################################################
+    html.Div([
+      # header
+      html.Div([
+        html.Div([
+          html.Strong('Base editing efficiency')
+          ],
+          className = 'module_header_text'),
+        ],
+        className = 'module_header'
+      ),
+
+      # Row
+      html.Div([
+        # Item
+        html.Div(
+          id = 'S_text_test_efficiency',
+          className = 'twelve columns',
+        ),
+
+        ],
+        className = 'row',
+      ),
+
+      # Row
+      html.Div([
+        # Item
+        dcc.Slider(
+          id = 'S_slider_efficiency_mean',
+          min = 0.01,
+          max = 0.99,
+          step = 0.01,
+          value = 0.5,
+          updatemode = 'drag',
+          # updatemode = 'mouseup',
+          marks = {
+            0.10: {'label': '10%', 
+              'style': {'color': lib.rgb['gray']},
+            },
+            0.25: {'label': '25%',
+              'style': {'color': lib.rgb['gray']},
+            },
+            0.50: {'label': '50%',
+              'style': {'color': lib.rgb['gray']},
+            },
+            0.75: {'label': '75%',
+              'style': {'color': lib.rgb['gray']},
+            },
+            0.90: {'label': '90%',
+              'style': {'color': lib.rgb['gray']},
+            },
+          },
+
+          className = 'three columns',
+        ),
+
+        # Item
+        html.Div(
+          '',
+          id = 'S_slider_efficiency_mean_text',
+          className = 'nine columns',
+        ),
+
+        ],
+        className = 'row',
+        style = dict(
+          marginBottom = '10px',
+        ),
+      ),
+
+      # Row
+      html.Div([
+        # Item
+        dcc.Graph(
+          id = 'S_efficiency_plot',
+          config = dict(
+            modeBarButtonsToRemove = modebarbuttons_2d,
+            displaylogo = False,
+            displayModeBar = False,
+            staticPlot = True,
+          ),
+          className = 'four columns',
+        ),
+
+        # Item
+        html.Div(
+          '',
+          className = 'eight columns',
+        ),
+
+        ],
+        className = 'row',
+      ),
+
+    ], className = 'module_style',
+    ),
+
+    ###################################################
+    # Module: Bystander, DNA
+    ###################################################
+    html.Div([
+      # header
+      html.Div([
+        html.Div([
+          html.Strong('Base editing outcomes: DNA sequence')
+          ],
+          className = 'module_header_text'),
+        ],
+        className = 'module_header'
+      ),
+
+      # Row
+      html.Div([
+        # Item
+        # Text table
+        dcc.Graph(
+          id = 'S_bystander_gt_table',
+          config = dict(
+            modeBarButtonsToRemove = modebarbuttons_2d,
+            displaylogo = False,
+            displayModeBar = False,
+            staticPlot = True,
+          ),
+          style = dict(
+            height = 290,
+            width = 629,
+          ),
+          className = 'twelve columns',
+        ),
+
+        ],
+        className = 'row',
+      ),
+
+    ], className = 'module_style',
+    ),
+
+    ###################################################
+    # Module: Bystander, AA
+    ###################################################
+    html.Div([
       html.Div([
         # header
         html.Div([
           html.Div([
-            html.Strong('Base editing outcomes: DNA sequence')
+            html.Strong('Base editing outcomes: Amino acid sequence')
             ],
             className = 'module_header_text'),
           ],
           className = 'module_header'
         ),
 
-        html.Div(
-          id = 'S_text-test_efficiency',
-        ),
-
-        html.Div(
-          [
-            # Text table
-            dcc.Graph(
-              id = 'S_bystander_gt-table',
-              config = dict(
-                modeBarButtonsToRemove = modebarbuttons_2d,
-                displaylogo = False,
-                displayModeBar = False,
-                staticPlot = True,
-              ),
-              style = dict(
-                height = 290,
-                width = 629,
-              ),
-              className = 'twelve columns',
+        # Row
+        html.Div([
+          # Item
+          # Text table
+          dcc.Graph(
+            id = 'S_bystander_aa_table',
+            config = dict(
+              modeBarButtonsToRemove = modebarbuttons_2d,
+              displaylogo = False,
+              displayModeBar = False,
+              staticPlot = True,
             ),
+            className = 'twelve columns',
+          ),
+          # Bar plot
 
           ],
           className = 'row',
         ),
 
-      ], className = 'module_style',
-      ),
-
-      ###################################################
-      # Module: Bystander, AA
-      ###################################################
-      html.Div([
-        html.Div([
-          # header
-          html.Div([
-            html.Div([
-              html.Strong('Base editing outcomes: Amino acid sequence')
-              ],
-              className = 'module_header_text'),
-            ],
-            className = 'module_header'
-          ),
-
-          html.Div([
-            # Text table
-            dcc.Graph(
-              id = 'S_bystander_aa-table',
-              config = dict(
-                modeBarButtonsToRemove = modebarbuttons_2d,
-                displaylogo = False,
-                displayModeBar = False,
-                staticPlot = True,
-              ),
-              className = 'twelve columns',
-            ),
-            # Bar plot
-
-            ],
-            className = 'row',
-          ),
-
-          ], 
-          className = 'module_style', 
-        ),
         ], 
-        id = 'S_bystander_module_container',
-        style = {'display': 'none'},
-        className = 'animate-bottom',
+        className = 'module_style', 
       ),
+      ], 
+      id = 'S_bystander_module_container',
+      style = {'display': 'none'},
+      className = 'animate-bottom',
+    ),
 
-      ###################################################
-      # Module
-      ###################################################
-      html.Div([
-        ],
-      )
+    ###################################################
+    # Module
+    ###################################################
+    html.Div([
+      ],
+    )
 
     ],
     # body style
@@ -338,22 +440,22 @@ layout = html.Div([
 # Hidden data callbacks
 ## 
 @app.callback(
-  Output('S_hidden-chosen-base_editor', 'children'),
-  [Input('S_editor-dropdown', 'value')])
+  Output('S_hidden_chosen_base_editor', 'children'),
+  [Input('S_editor_dropdown', 'value')])
 def update_editor_choice(val):
   [editor, celltype] = [s.strip() for s in val.split(',')]
   return editor
 
 @app.callback(
-  Output('S_hidden-chosen-celltype', 'children'),
-  [Input('S_editor-dropdown', 'value')])
+  Output('S_hidden_chosen_celltype', 'children'),
+  [Input('S_editor_dropdown', 'value')])
 def update_celltype_choice(val):
   [editor, celltype] = [s.strip() for s in val.split(',')]
   return celltype
 
 @app.callback(
-  Output('S_hidden-chosen-aa_frame', 'children'),
-  [Input('S_aa_frame-dropdown', 'value')])
+  Output('S_hidden_chosen_aa_frame', 'children'),
+  [Input('S_aa_frame_dropdown', 'value')])
 def update_aaframe_choice(val):
   '''
     None
@@ -394,20 +496,20 @@ def efficiency_predict_cache(seq, base_editor, celltype):
 # Prediction callbacks
 ##
 @app.callback(
-  Output('S_hidden-pred-signal_bystander', 'children'),
+  Output('S_hidden_pred_signal_bystander', 'children'),
   [Input('S_textbox', 'value'),
-   Input('S_hidden-chosen-base_editor', 'children'),
-   Input('S_hidden-chosen-celltype', 'children')])
+   Input('S_hidden_chosen_base_editor', 'children'),
+   Input('S_hidden_chosen_celltype', 'children')])
 def bystander_predict(seq, base_editor, celltype):
   seq = seq.upper()
   bystander_predict_cache(seq, base_editor, celltype)
   return '%s,%s,%s' % (seq, base_editor, celltype)
 
 @app.callback(
-  Output('S_hidden-pred-signal_efficiency', 'children'),
+  Output('S_hidden_pred_signal_efficiency', 'children'),
   [Input('S_textbox', 'value'),
-   Input('S_hidden-chosen-base_editor', 'children'),
-   Input('S_hidden-chosen-celltype', 'children')])
+   Input('S_hidden_chosen_base_editor', 'children'),
+   Input('S_hidden_chosen_celltype', 'children')])
 def efficiency_predict(seq, base_editor, celltype):
   seq = seq.upper()
   efficiency_predict_cache(seq, base_editor, celltype)
@@ -418,11 +520,122 @@ def efficiency_predict(seq, base_editor, celltype):
 ###########################################
 
 ##
+# Efficiency
+##
+@app.callback(
+  Output('S_text_test_efficiency', 'children'),
+  [Input('S_hidden_pred_signal_efficiency', 'children')])
+def update_efficiency_text(signal):
+  seq, base_editor, celltype = signal.split(',')
+  pred_d = efficiency_predict_cache(seq, base_editor, celltype)
+  logit_score = pred_d['Predicted logit score']
+
+  return [
+    html.Span(f'Logit score: {logit_score:.2f}'),
+  ]
+
+@app.callback(
+  Output('S_slider_efficiency_mean_text', 'children'),
+  [Input('S_slider_efficiency_mean', 'value')])
+def update_efficiency_mean_text(mean):
+  return f'Selected mean: {mean:.2f}'
+
+@app.callback(
+  Output('S_efficiency_plot', 'figure'),
+  [Input('S_slider_efficiency_mean', 'value'),
+   Input('S_hidden_pred_signal_efficiency', 'children'),
+  ])
+def efficiency_logit_plot(mean, signal):
+  seq, base_editor, celltype = signal.split(',')
+  pred_d = efficiency_predict_cache(seq, base_editor, celltype)
+  logit_score = pred_d['Predicted logit score']
+
+  from scipy.special import logit, expit
+  logit_mean = logit(mean)
+  std = 2
+
+  # Form curve
+  curve_xs = np.arange(-3, 3, 0.01)
+  curve_ys = expit(std * curve_xs + logit_mean)
+
+  # Form special points
+  # special_pts_x = [0]
+  # special_pts_y = [mean]
+  special_pts_x = []
+  special_pts_y = []
+  special_pts_x.append(logit_score)
+  pred_real = expit(std * logit_score + logit_mean)
+  special_pts_y.append(pred_real)
+
+  return dict(
+    data = [
+      go.Scattergl(
+        x = curve_xs,
+        y = curve_ys,
+        line = dict(
+          color = lib.rgb['blue'],
+        ),
+        mode = 'lines',
+        hoverinfo = 'text',
+        text = curve_ys,
+        showlegend = False,
+      ),
+      go.Scattergl(
+        x = special_pts_x,
+        y = special_pts_y,
+        mode = 'markers',
+        marker = dict(
+          color = lib.rgb['red'],
+          size = 10,
+        ),
+        hoverinfo = 'x+y',
+        showlegend = False,
+      ),
+    ],
+    layout = go.Layout(
+      font = dict(
+        family = 'Arial',
+      ),
+      yaxis = dict(
+        range = [0, 1],
+        # title = 'Predicted fraction of sequenced reads with base editing activity at any substrate nucleotide',
+      ),
+      xaxis = dict(
+        title = 'Predicted efficiency score',
+      ),
+      shapes = [
+        dict(
+          type = 'line',
+          x0 = logit_score,
+          y0 = 0,
+          x1 = logit_score,
+          y1 = pred_real,
+          line = dict(
+            color = lib.rgb['red'],
+            width = 1.75,
+            dash = 'dot',
+          ),
+        ),
+      ],
+      height = 200,
+      width = 400,
+      margin = dict(
+        l = 30,
+        r = 30,
+        t = 30,
+        b = 30,
+      ),
+    ),
+  )
+
+
+
+##
 # Bystander, genotype table
 ##
 @app.callback(
-  Output('S_bystander_gt-table', 'figure'),
-  [Input('S_hidden-pred-signal_bystander', 'children'),
+  Output('S_bystander_gt_table', 'figure'),
+  [Input('S_hidden_pred_signal_bystander', 'children'),
   ])
 def update_gt_table(signal):
   seq, base_editor, celltype = signal.split(',')
@@ -528,9 +741,9 @@ def update_gt_table(signal):
 # Bystander, amino acid table
 ##
 @app.callback(
-  Output('S_bystander_aa-table', 'figure'),
-  [Input('S_hidden-pred-signal_bystander', 'children'),
-   Input('S_hidden-chosen-aa_frame', 'children'),
+  Output('S_bystander_aa_table', 'figure'),
+  [Input('S_hidden_pred_signal_bystander', 'children'),
+   Input('S_hidden_chosen_aa_frame', 'children'),
   ])
 def update_aa_table(signal, aa_frame_txt):
   seq, base_editor, celltype = signal.split(',')
@@ -731,7 +944,7 @@ def update_aa_table(signal, aa_frame_txt):
 
 @app.callback(
   Output('S_bystander_module_container', 'style'),
-  [Input('S_hidden-chosen-aa_frame', 'children')],
+  [Input('S_hidden_chosen_aa_frame', 'children')],
   [State('S_bystander_module_container', 'style')])
 def show_hide_aa_module(aa_frame_text, prev_style):
   if aa_frame_text == 'None':
@@ -741,28 +954,6 @@ def show_hide_aa_module(aa_frame_text, prev_style):
       del prev_style['display']
   return prev_style
 
-
-##
-# General stats callbacks
-##
-
-## General stats text
-@app.callback(
-  Output('S_text-test_efficiency', 'children'),
-  [Input('S_hidden-pred-signal_efficiency', 'children')])
-def text_genstats_precision(signal):
-  seq, base_editor, celltype = signal.split(',')
-  pred_d = efficiency_predict_cache(seq, base_editor, celltype)
-  print(pred_d)
-  logit_score = pred_d['Predicted logit score']
-
-  return [
-    html.Span(f'Logit score: {logit_score}'),
-  ]
-
-##
-# Genotype table v2 callbacks
-##
 
 ##
 # Download callbacks
