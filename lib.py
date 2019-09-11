@@ -1,4 +1,5 @@
 import numpy as np
+import plotly
 
 ###############################################
 # Functions and variables for URL shortening
@@ -403,7 +404,7 @@ def dna_to_aa(dna, frame, strand):
 ###############################################
 # Colors
 ###############################################
-name_to_color = {
+rgb = {
   'red': 'rgb(236, 67, 57)',
   'orange': 'rgb(244, 123, 22)',
   'light green': 'rgb(174, 214, 119)',
@@ -440,6 +441,49 @@ aa_cmap = {
   '*': 'rgba(115, 118, 121, 0.5)',
   ' ': 'white',
 }
+
+# Used for making color scale for [0, 1] values
+dna_color_minmax = {
+  'A': [
+    'rgba(255, 224, 218, 1)',
+    'rgba(221, 46, 31, 1)',
+  ],
+  'C': [
+    'rgba(255, 242, 182, 1)',
+    'rgba(230, 167, 0, 1)',
+  ],
+  'G': [
+    'rgba(224, 244, 190, 1)',
+    'rgba(96, 170, 20, 1)',
+  ],
+  'T': [
+    'rgba(207, 237, 251, 1)',
+    'rgba(0, 140, 201, 1)',
+  ],
+}
+
+# Font color for match vs. edited nts / aas
+font_cmap = {
+  'match': 'rgba(208, 211, 214, 1)',
+  'edited': 'black',
+}
+
+num_colors_in_ref = 666
+num_colors_in_ref_resolution = 1 / num_colors_in_ref
+dna_color_scales = {
+  nt: plotly.colors.n_colors(
+    dna_color_minmax[nt][0],
+    dna_color_minmax[nt][1],
+    num_colors_in_ref, 
+    colortype = 'rgb'
+  ) for nt in dna_color_minmax
+}
+
+def get_color(scale, val, white_threshold = 0):
+  # val in [0, 1]. scale = list of colors. assumed to be more white at 0
+  if val < white_threshold: return 'white'
+  c_idx = int(val / num_colors_in_ref_resolution)    
+  return scale[c_idx]
 
 ###############################################
 # 
@@ -487,37 +531,6 @@ def get_gapped_alignments(top, stats):
     gap_gt = add_bar(gap_gt, cutsite)
     gapped_aligns.append(trim_alignment(gap_gt, cutsite, 'del'))
   return gapped_aligns
-
-###############################################
-# Colors
-###############################################
-
-def get_color(stats_col):
-  if stats_col in ['Cutsite', 'Exon number', 'Dist. to 5\' end', 'Dist. to 3\' end', 'Dist. to POI']:
-    return '#86898C'
-  if stats_col == 'Exp. indel len':
-    return '#86898C'
-  if stats_col == 'Frame +0 (%)':
-    return '#68C7EC'
-  if stats_col == 'Frame +1 (%)':
-    return '#68C7EC'
-  if stats_col == 'Frame +2 (%)':
-    return '#68C7EC'
-  if stats_col == 'Frameshift (%)':
-    return '#00A0DC'
-  if stats_col == 'M.F. del (%)':
-    return '#ED4795'
-  if stats_col == 'M.F. ins (%)':
-    return '#F47B16'
-  if stats_col == 'M.F. gt (%)':
-    return '#7CB82F'
-  if stats_col == 'MH strength':
-    return '#EC4339'
-  if stats_col == 'Precision':
-    return '#00AEB3'
-  if stats_col in ['Repairs to spec.', 'Deletes spec.']:
-    return '#C11F1D'
-  return '#333333' # default
 
 ###############################################
 # Batch mode: xaxis ticks 

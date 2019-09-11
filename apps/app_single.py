@@ -164,13 +164,13 @@ layout = html.Div([
     [
       # First (not bottom animated)
       ###################################################
-      # Module: Single base editor
+      # Module: Bystander, DNA
       ###################################################
       html.Div([
         # header
         html.Div([
           html.Div([
-            html.Strong('Ex: Single base editor')
+            html.Strong('Base editing outcomes: DNA sequence')
             ],
             className = 'module_header_text'),
           ],
@@ -185,7 +185,7 @@ layout = html.Div([
           [
             # Text table
             dcc.Graph(
-              id = 'S_summary-alignment-table',
+              id = 'S_bystander_gt-table',
               config = dict(
                 modeBarButtonsToRemove = modebarbuttons_2d,
                 displaylogo = False,
@@ -196,6 +196,46 @@ layout = html.Div([
                 height = 290,
                 width = 629,
               ),
+              className = 'twelve columns',
+            ),
+
+          ],
+          className = 'row',
+        ),
+
+      ], className = 'module_style',
+      ),
+
+      ###################################################
+      # Module: Bystander, AA
+      ###################################################
+      html.Div([
+        # header
+        html.Div([
+          html.Div([
+            html.Strong('Base editing outcomes: Amino acid sequence')
+            ],
+            className = 'module_header_text'),
+          ],
+          className = 'module_header'
+        ),
+
+        html.Div(
+          [
+            # Text table
+            dcc.Graph(
+              id = 'S_bystander_aa-table',
+              config = dict(
+                modeBarButtonsToRemove = modebarbuttons_2d,
+                displaylogo = False,
+                displayModeBar = False,
+                staticPlot = True,
+              ),
+              # style = dict(
+              #   # should be variable probably
+              #   # height = 500,
+              #   width = 629,
+              # ),
               className = 'twelve columns',
             ),
 
@@ -305,103 +345,41 @@ def efficiency_predict(seq, base_editor, celltype):
   efficiency_predict_cache(seq, base_editor, celltype)
   return '%s,%s,%s' % (seq, base_editor, celltype)
 
+###########################################
+########     Module callbacks     #########
+###########################################
+
 ##
-# Summary of predictions callbacks
+# Bystander, genotype table
 ##
 @app.callback(
-  Output('S_summary-alignment-table', 'figure'),
+  Output('S_bystander_gt-table', 'figure'),
   [Input('S_hidden-pred-signal_bystander', 'children'),
   ])
-def update_summary_alignment_text(signal):
+def update_gt_table(signal):
   seq, base_editor, celltype = signal.split(',')
   pred_df, stats, nt_cols = bystander_predict_cache(seq, base_editor, celltype)
+
+  p0idx = 19
+  target_seq = stats['50-nt target sequence']
 
   ## Set up data
   top10 = pred_df.iloc[:10]
   fqs = top10['Predicted frequency']
   fq_strings = [''] + [f'{100*s:.1f}%' for s in fqs]
 
-  p0idx = 19
-  target_seq = stats['50-nt target sequence']
-  target_aas = list(lib.dna_to_aa(target_seq, 0, '+')) + [' ']
-
-  pred_df['Amino acid sequence'] = [lib.dna_to_aa(s, 0, '+') for s in pred_df['Genotype']]
-
   poswise_total = {col: sum(pred_df.loc[pred_df[col] != col[0], 'Predicted frequency']) for col in nt_cols}
-
-  ## Set up colors
-  fill_cmap = {
-    'match': 'rgba(255, 255, 255, 1)',
-    'A': 'rgba(236, 67, 57, 1)',
-    'C': 'rgba(239, 185, 32, 1)',
-    'G': 'rgba(124, 184, 47, 1)',
-    'T': 'rgba(0, 160, 220, 1)',
-  }
-
-  font_cmap = {
-    'match': 'rgba(208, 211, 214, 1)',
-    'edited': 'black',
-  }
-
-  color_minmax = {
-    'A': [
-      'rgba(255, 224, 218, 1)',
-      'rgba(221, 46, 31, 1)',
-    ],
-    'C': [
-      'rgba(255, 242, 182, 1)',
-      'rgba(230, 167, 0, 1)',
-    ],
-    'G': [
-      'rgba(224, 244, 190, 1)',
-      'rgba(96, 170, 20, 1)',
-    ],
-    'T': [
-      'rgba(207, 237, 251, 1)',
-      'rgba(0, 140, 201, 1)',
-    ],
-  }
-
-  num_colors_in_ref = 666
-  num_colors_in_ref_resolution = 1 / num_colors_in_ref
-  color_scales = {
-    nt: plotly.colors.n_colors(
-      color_minmax[nt][0],
-      color_minmax[nt][1],
-      num_colors_in_ref, 
-      colortype = 'rgb'
-    ) for nt in color_minmax
-  }
-
-  def get_color(scale, val, white_threshold = 0):
-    # val in [0, 1]
-    if val < white_threshold: return 'white'
-    c_idx = int(val / num_colors_in_ref_resolution)    
-    return scale[c_idx]
 
   ## Form table with colors
   fillcolors = []
   fontcolors = []
   poswise_cols = []
   for gt_idx, ref_nt in enumerate(target_seq):
-    aa_idx = gt_idx // 3
     pos = gt_idx - p0idx
-    cand_col = f'{nt}{pos}'
+    cand_col = f'{ref_nt}{pos}'
     pos_col = []
     col_fill_colors = []
     col_font_colors = []
-
-    # Testing amino acid seq
-    # Text
-    ref_aa = target_aas[aa_idx]
-    if gt_idx % 3 == 1:
-      pos_col.append(ref_aa)
-    else:
-      pos_col.append('')
-    # Color
-    # col_fill_colors.append('rgba(0, 160, 220, 0)')
-    col_fill_colors.append(lib.aa_cmap[ref_aa])
-    col_font_colors.append('black')
 
     # row for target_seq 
     # Text
@@ -410,48 +388,29 @@ def update_summary_alignment_text(signal):
     if cand_col not in nt_cols:
       col_fill_colors.append('white')
     else:
-      # col_fill_colors = [fill_cmap[ref_nt]]
       tot_edit_frac = poswise_total[cand_col]
-      color_scale = color_scales[ref_nt]
-      col_fill_colors.append(get_color(color_scale, tot_edit_frac, white_threshold = 0.0015))
+      color_scale = lib.dna_color_scales[ref_nt]
+      col_fill_colors.append(lib.get_color(color_scale, tot_edit_frac, white_threshold = 0.002))
     col_font_colors.append('black')
 
-    # rows for edited genotypes + aas
+    # rows for edited genotypes
     for jdx, row in top10.iterrows():
       pred_fq = row['Predicted frequency']
       gt_seq = row['Genotype']
-      aa_seq = row['Amino acid sequence']
 
       obs_nt = gt_seq[gt_idx]
-      obs_aa = aa_seq[aa_idx]
-
-      # Amino acid row
-      # Text
-      if gt_idx % 3 == 1:
-        pos_col.append(obs_aa)
-      else: 
-        pos_col.append('')
-      # Color
-      if obs_aa == ref_aa:
-        col_fill_colors.append(fill_cmap['match'])
-        col_font_colors.append(font_cmap['match'])
-      else:
-        col_fill_colors.append(lib.aa_cmap[obs_aa])
-        col_font_colors.append(font_cmap['edited'])
 
       # Genotype row
       # Text
       # Color
       pos_col.append(obs_nt)
       if obs_nt == ref_nt:
-        col_fill_colors.append(fill_cmap['match'])
-        col_font_colors.append(font_cmap['match'])
+        col_fill_colors.append('white')
+        col_font_colors.append(lib.font_cmap['match'])
       else:
-        # col_fill_colors.append(fill_cmap[obs_nt])
-        color_scale = color_scales[obs_nt]
-        col_fill_colors.append(get_color(color_scale, pred_fq))
-        col_font_colors.append(font_cmap['edited'])
-
+        color_scale = lib.dna_color_scales[obs_nt]
+        col_fill_colors.append(lib.get_color(color_scale, pred_fq))
+        col_font_colors.append(lib.font_cmap['edited'])
 
     # Finished iterating over one column
     poswise_cols.append(pos_col)
@@ -496,6 +455,186 @@ def update_summary_alignment_text(signal):
       ),
     ),
   )
+
+##
+# Bystander, amino acid table
+##
+@app.callback(
+  Output('S_bystander_aa-table', 'figure'),
+  [Input('S_hidden-pred-signal_bystander', 'children'),
+  ])
+def update_aa_table(signal):
+  seq, base_editor, celltype = signal.split(',')
+  pred_df, stats, nt_cols = bystander_predict_cache(seq, base_editor, celltype)
+
+  p0idx = 19
+  target_seq = stats['50-nt target sequence']
+  target_aas = list(lib.dna_to_aa(target_seq, 0, '+')) + [' ']
+  pred_df['Amino acid sequence'] = [lib.dna_to_aa(s, 0, '+') + ' ' for s in pred_df['Genotype']]
+
+  ## Set up data
+  aa_fq_df = pred_df[['Amino acid sequence', 'Predicted frequency']].groupby('Amino acid sequence').agg(sum).reset_index().sort_values(by = 'Predicted frequency', ascending = False)
+  aa_fq_df = aa_fq_df.iloc[:10]
+  aa_fq_df = aa_fq_df[aa_fq_df['Predicted frequency'] >= 0.01]
+
+  aa_to_fq = {}
+  aa_to_gts = {}
+  num_rows = 0
+  for idx, row in aa_fq_df.iterrows():
+    aa_seq = row['Amino acid sequence']
+    aa_to_fq[aa_seq] = row['Predicted frequency']
+    num_rows += 2
+
+    dfs = pred_df[pred_df['Amino acid sequence'] == aa_seq]
+    dfs = dfs[dfs['Predicted frequency'] >= 0.005].sort_values(by = 'Predicted frequency', ascending = False)
+    aa_to_gts[aa_seq] = list(zip(list(dfs['Genotype']), list(dfs['Predicted frequency'])))
+    num_rows += len(dfs)
+
+  poswise_total = {col: sum(pred_df.loc[pred_df[col] != col[0], 'Predicted frequency']) for col in nt_cols}
+
+  ## Form table with colors
+  fillcolors = []
+  fontcolors = []
+  poswise_cols = []
+  for gt_idx, ref_nt in enumerate(target_seq):
+    aa_idx = gt_idx // 3
+    pos = gt_idx - p0idx
+    cand_col = f'{ref_nt}{pos}'
+    pos_col = []
+    col_fill_colors = []
+    col_font_colors = []
+
+    # Testing amino acid seq
+    # Text
+    ref_aa = target_aas[aa_idx]
+    if gt_idx % 3 == 1:
+      pos_col.append(ref_aa)
+    else:
+      pos_col.append('')
+    # Color
+    # col_fill_colors.append('rgba(0, 160, 220, 0)')
+    col_fill_colors.append(lib.aa_cmap[ref_aa])
+    col_font_colors.append('black')
+
+    # row for target_seq 
+    # Text
+    pos_col.append(ref_nt)
+    # Color
+    if cand_col not in nt_cols:
+      col_fill_colors.append('white')
+    else:
+      tot_edit_frac = poswise_total[cand_col]
+      color_scale = lib.dna_color_scales[ref_nt]
+      col_fill_colors.append(lib.get_color(color_scale, tot_edit_frac, white_threshold = 0.002))
+    col_font_colors.append('black')
+
+    # Blank row
+    pos_col.append('')
+    for col in col_fill_colors, col_font_colors:
+      col.append('white')
+
+    # rows for edited genotypes + aas
+    for aa_seq in aa_to_fq:
+      aa_fq = aa_to_fq[aa_seq]
+      obs_aa = aa_seq[aa_idx]
+
+      # Amino acid row
+      # Text
+      if gt_idx % 3 == 1:
+        pos_col.append(obs_aa)
+      else: 
+        pos_col.append('')
+      # Color
+      if obs_aa == ref_aa:
+        col_fill_colors.append('white')
+        col_font_colors.append(lib.font_cmap['match'])
+      else:
+        col_fill_colors.append(lib.aa_cmap[obs_aa])
+        col_font_colors.append(lib.font_cmap['edited'])
+
+      for (gt_seq, gt_fq) in aa_to_gts[aa_seq]:
+        obs_nt = gt_seq[gt_idx]
+
+        # Genotype row
+        # Text
+        # Color
+        pos_col.append(obs_nt)
+        if obs_nt == ref_nt:
+          col_fill_colors.append('white')
+          col_font_colors.append(lib.font_cmap['match'])
+        else:
+          color_scale = lib.dna_color_scales[obs_nt]
+          col_fill_colors.append(lib.get_color(color_scale, gt_fq))
+          col_font_colors.append(lib.font_cmap['edited'])
+
+      # Blank row
+      pos_col.append('')
+      for col in col_fill_colors, col_font_colors:
+        col.append('white')
+
+    # Finished iterating over one column
+    poswise_cols.append(pos_col)
+    fillcolors.append(col_fill_colors)
+    fontcolors.append(col_font_colors)
+
+  # Get frequency strings
+  fq_strings = ['', '', '']
+  fq_string_fontcolors = ['white', 'white', 'white']
+  for aa_seq in aa_to_fq:
+    aa_fq = aa_to_fq[aa_seq]
+
+    fq_strings.append(f'{100*aa_fq:.1f}%')
+    fq_string_fontcolors.append('black')
+
+    for (gt_seq, gt_fq) in aa_to_gts[aa_seq]:
+      fq_strings.append(f'{100*gt_fq:.1f}%')
+      fq_string_fontcolors.append(lib.rgb['gray'])
+
+    # Blank row
+    fq_strings.append('')
+    fq_string_fontcolors.append('white')
+
+  # alignment_col_width = 420
+  # pos_col_width = alignment_col_width // len(poswise_cols)
+  pos_col_width = 1.2
+
+  return dict(
+    data = [go.Table(
+      columnwidth = [pos_col_width] * len(poswise_cols) + [10],
+      header = dict(
+        line = dict(width = 0),
+        fill = dict(color = 'white'),
+        height = 0,
+      ),
+      cells = dict(
+        values = poswise_cols + [fq_strings],
+        align = ['center'] * len(poswise_cols) + ['right'], 
+        fill = dict(
+          color = fillcolors + ['rgba(255, 255, 255, 1)'] * len(fq_strings),
+        ),
+        line = dict(width = 0),
+        font = dict(
+          family = 'monospace',
+          color = fontcolors + [fq_string_fontcolors],
+        ),
+        height = 20,
+      ),
+    )],
+    layout = go.Layout(
+      font = dict(
+        family = 'monospace',
+      ),
+      height = 60 + 20 * num_rows + 20,
+      width = 629,
+      margin = dict(
+        l = 10,
+        r = 0,
+        t = 5,
+        b = 5,
+      ),
+    ),
+  )
+
 
 ##
 # General stats callbacks
