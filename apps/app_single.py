@@ -3,6 +3,7 @@ from collections import defaultdict
 import random
 import numpy as np
 import pandas as pd
+import scipy
 from scipy.stats import entropy
 import time
 from io import StringIO
@@ -241,65 +242,21 @@ layout = html.Div([
 
       # Row
       html.Div([
-        # Item
+        # Item. Y-axis label
         html.Div(
-          id = 'S_text_test_efficiency',
-          className = 'twelve columns',
+          'Predicted frequency of sequenced reads with base editing activity at any substrate nucleotide',
+          className = 'two columns',
+          style = dict(
+            textAlign = 'right',
+            lineHeight = '1',
+            # height = '200px',
+            # translateY 100px sets top of text to middle, which makes multi-line text too low
+            transform = 'translate(35px, 65px)',
+            fontSize = '14px',
+          ),
         ),
 
-        ],
-        className = 'row',
-      ),
-
-      # Row
-      html.Div([
-        # Item
-        dcc.Slider(
-          id = 'S_slider_efficiency_mean',
-          min = 0.01,
-          max = 0.99,
-          step = 0.01,
-          value = 0.5,
-          updatemode = 'drag',
-          # updatemode = 'mouseup',
-          marks = {
-            0.10: {'label': '10%', 
-              'style': {'color': lib.rgb['gray']},
-            },
-            0.25: {'label': '25%',
-              'style': {'color': lib.rgb['gray']},
-            },
-            0.50: {'label': '50%',
-              'style': {'color': lib.rgb['gray']},
-            },
-            0.75: {'label': '75%',
-              'style': {'color': lib.rgb['gray']},
-            },
-            0.90: {'label': '90%',
-              'style': {'color': lib.rgb['gray']},
-            },
-          },
-
-          className = 'three columns',
-        ),
-
-        # Item
-        html.Div(
-          '',
-          id = 'S_slider_efficiency_mean_text',
-          className = 'nine columns',
-        ),
-
-        ],
-        className = 'row',
-        style = dict(
-          marginBottom = '10px',
-        ),
-      ),
-
-      # Row
-      html.Div([
-        # Item
+        # Item. Plot
         dcc.Graph(
           id = 'S_efficiency_plot',
           config = dict(
@@ -308,17 +265,75 @@ layout = html.Div([
             displayModeBar = False,
             staticPlot = True,
           ),
+          style = dict(
+            transform = 'translateX(20px)',
+          ),
           className = 'four columns',
         ),
 
-        # Item
+        # Item. Text descriptions
         html.Div(
-          '',
-          className = 'eight columns',
+          id = 'S_efficiency_longtext',
+          style = dict(
+            transform = 'translateY(15px)',
+          ),
+          className = 'six columns',
         ),
 
         ],
         className = 'row',
+      ),
+
+      # Row
+      html.Div([
+        # Item. 
+        html.Div(
+          '',
+          className = 'three columns',
+        ),
+
+        # Item
+        html.Div(
+          dcc.Slider(
+            id = 'S_slider_efficiency_mean',
+            min = 0.01,
+            max = 0.99,
+            step = 0.01,
+            value = 0.5,
+            updatemode = 'drag',
+            # updatemode = 'mouseup',
+            marks = {
+              0.10: {'label': '10%', 
+                'style': {'color': lib.rgb['gray']},
+              },
+              0.25: {'label': '25%',
+                'style': {'color': lib.rgb['gray']},
+              },
+              0.50: {'label': '50%',
+                'style': {'color': lib.rgb['gray']},
+              },
+              0.75: {'label': '75%',
+                'style': {'color': lib.rgb['gray']},
+              },
+              0.90: {'label': '90%',
+                'style': {'color': lib.rgb['gray']},
+              },
+            },
+          ),
+          style = dict(
+            float = 'right',
+            width = '300px',
+            marginTop = '15px',
+            marginRight = '100px',
+            marginBottom = '30px',
+          ),
+        ),
+
+        ],
+        className = 'row',
+        style = dict(
+          marginBottom = '10px',
+        ),
       ),
 
     ], className = 'module_style',
@@ -523,22 +538,67 @@ def efficiency_predict(seq, base_editor, celltype):
 # Efficiency
 ##
 @app.callback(
-  Output('S_text_test_efficiency', 'children'),
-  [Input('S_hidden_pred_signal_efficiency', 'children')])
-def update_efficiency_text(signal):
+  Output('S_efficiency_longtext', 'children'),
+  [Input('S_slider_efficiency_mean', 'value'),
+   Input('S_hidden_pred_signal_efficiency', 'children'),
+  ])
+def update_efficiency_mean_text(chosen_mean, signal):
+
   seq, base_editor, celltype = signal.split(',')
   pred_d = efficiency_predict_cache(seq, base_editor, celltype)
   logit_score = pred_d['Predicted logit score']
+  percentile = scipy.stats.norm.cdf(logit_score) * 100
+
+  from scipy.special import logit, expit
+  logit_mean = logit(chosen_mean)
+  std = 2
+  pred_real = expit(std * logit_score + logit_mean) * 100
+
+  if 0 <= percentile <= 35:
+    var_text = 'below average'
+    var_color = lib.rgb['red']
+  if 35 <= percentile <= 65:
+    var_text = 'average'
+    var_color = 'black'
+  if 65 <= percentile <= 100:
+    var_text = 'above average'
+    var_color = lib.rgb['green']
+
+  tooltip_msg = 'Base editing efficiency varies by cell-type, delivery method, length of exposure, etc. Here, we predict efficiency from sequence context alone.'
 
   return [
-    html.Span(f'Logit score: {logit_score:.2f}'),
-  ]
+    # Section
+    html.Span('This target has '),
+    html.Span(f'{var_text} base editing efficiency. ',
+      style = dict(color = var_color),
+    ),
+    html.Br(),
+    html.Span(f'Predicted Z-score: {logit_score:.2f}',
+      className = 'generalstats_subtext_style'),
+    html.Br(),
+    html.Span(f'Percentile: {percentile:.1f}',
+      className = 'generalstats_subtext_style'),
+    html.Br(),
+    html.Br(),
 
-@app.callback(
-  Output('S_slider_efficiency_mean_text', 'children'),
-  [Input('S_slider_efficiency_mean', 'value')])
-def update_efficiency_mean_text(mean):
-  return f'Selected mean: {mean:.2f}'
+    # Section
+    html.Span(f'If the average editing efficiency is {100*chosen_mean:.1f}%, ',
+    ),
+    html.Div([
+      html.Img(src = '/assets/tooltip_logo.png', className = 'tooltiplogo'),
+      html.Span(tooltip_msg, className = 'tooltiptext'),
+      ], className = 'tooltip',
+    ),
+    html.Br(),
+    html.Span(f'then this target\'s efficiency is {pred_real:.1f}%.',
+    ),
+    html.Br(),
+    html.Span(f'Adjust to your observed average editing efficiency in your experimental system. ',
+      className = 'generalstats_subtext_style'),
+    html.Span(f'Read more on how to do this accurately.',
+      style = dict(fontStyle = 'italic'),
+      className = 'generalstats_subtext_style'),
+  ]
 
 @app.callback(
   Output('S_efficiency_plot', 'figure'),
@@ -599,9 +659,13 @@ def efficiency_logit_plot(mean, signal):
       yaxis = dict(
         range = [0, 1],
         # title = 'Predicted fraction of sequenced reads with base editing activity at any substrate nucleotide',
+        tickvals = [0, 0.25, 0.5, 0.75, 1],
+        ticktext = ['0%', '25%', '50%', '75%', '100%'],
       ),
       xaxis = dict(
         title = 'Predicted efficiency score',
+        tickvals = [-2, -1, 0, 1, 2],
+        zeroline = False,
       ),
       shapes = [
         dict(
@@ -618,7 +682,7 @@ def efficiency_logit_plot(mean, signal):
         ),
       ],
       height = 200,
-      width = 400,
+      width = 300,
       margin = dict(
         l = 30,
         r = 30,
