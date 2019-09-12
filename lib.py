@@ -3,6 +3,9 @@ import plotly, os, sys
 
 app_fold = os.path.dirname(os.path.realpath(__file__)) + '/'
 
+## Parameters
+efficiency_model_std = 1.5
+
 ###############################################
 # Functions and variables for URL shortening
 ###############################################

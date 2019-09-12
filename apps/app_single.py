@@ -299,7 +299,7 @@ layout = html.Div([
             min = 0.01,
             max = 0.99,
             step = 0.01,
-            value = 0.5,
+            value = 0.30,
             updatemode = 'drag',
             # updatemode = 'mouseup',
             marks = {
@@ -551,7 +551,7 @@ def update_efficiency_mean_text(chosen_mean, signal):
 
   from scipy.special import logit, expit
   logit_mean = logit(chosen_mean)
-  std = 2
+  std = lib.efficiency_model_std
   pred_real = expit(std * logit_score + logit_mean) * 100
 
   if 0 <= percentile <= 35:
@@ -564,7 +564,8 @@ def update_efficiency_mean_text(chosen_mean, signal):
     var_text = 'above average'
     var_color = lib.rgb['green']
 
-  tooltip_msg = 'Base editing efficiency varies by cell-type, delivery method, length of exposure, etc. Here, we predict efficiency from sequence context alone.'
+  # tooltip_msg = 'Base editing efficiency varies by cell-type, delivery method, length of exposure, etc. Here, we predict efficiency from sequence context alone.'
+  tooltip_msg = 'Averaged across all possible sequence contexts'
 
   return [
     # Section
@@ -612,7 +613,7 @@ def efficiency_logit_plot(mean, signal):
 
   from scipy.special import logit, expit
   logit_mean = logit(mean)
-  std = 2
+  std = lib.efficiency_model_std
 
   # Form curve
   curve_xs = np.arange(-3, 3, 0.01)
