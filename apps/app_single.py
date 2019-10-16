@@ -829,7 +829,7 @@ def update_aa_table(signal, aa_frame_txt):
   for aa in target_aas:
     whitespaced_target_aas.append(f' {aa} ')
     fills_target_aas += [lib.aa_cmap[aa]] * 3
-  whitespaced_target_aas +=[' '] * aa_end_gap
+  whitespaced_target_aas += [' '] * aa_end_gap
   fills_target_aas += ['white'] * aa_end_gap
   whitespaced_target_aas = ''.join(whitespaced_target_aas)
 
@@ -861,7 +861,7 @@ def update_aa_table(signal, aa_frame_txt):
       whitespaced_aa_seq.append(f' {aa} ')
       fills_aas += [fill_color] * 3
       fontcolors_aas += [font_color] * 3
-    whitespaced_aa_seq +=[' '] * aa_end_gap
+    whitespaced_aa_seq += [' '] * aa_end_gap
     fills_aas += ['white'] * aa_end_gap
     fontcolors_aas += ['white'] * aa_end_gap
     whitespaced_aa_seq = ''.join(whitespaced_aa_seq)
@@ -892,7 +892,7 @@ def update_aa_table(signal, aa_frame_txt):
 
     # Ref. amino acid seq row
     # Text and text
-    ref_aa = whitespaced_aa_seq[gt_idx]
+    ref_aa = whitespaced_target_aas[gt_idx]
     pos_col.append(ref_aa)
     col_fill_colors.append(fills_target_aas[gt_idx])
     col_font_colors.append('black')
