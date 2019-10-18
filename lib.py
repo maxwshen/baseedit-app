@@ -452,6 +452,20 @@ def get_aa_display_start_idx(dna, frame, strand):
     start_gap, end_gap = end_gap, start_gap
   return start_gap, end_gap
 
+def find_protospacers(seq):
+  left_margin = 20
+  right_margin = 10
+  ps_len = 20
+  protospacers = []
+  poss = []
+  unique_flags = []
+  for idx in range(left_margin, len(seq) - ps_len - right_margin):
+    ps = seq[idx : idx + ps_len]
+    unique_flags.append(bool(ps not in protospacers))
+    protospacers.append(ps)
+    poss.append(idx)
+  return protospacers, poss, unique_flags
+
 ###############################################
 # Colors
 ###############################################

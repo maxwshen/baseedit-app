@@ -52,7 +52,7 @@ cache_timeout = 300
 modebarbuttons_2d = ['zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines']
 
 # Random default, which is cached on filesystem
-default_text = ''.join([random.choice(list('ACGT')) for s in range(50)])
+default_text = ''.join([random.choice(list('ACGT')) for s in range(100)])
 if os.path.isfile('single_default.pkl'):
   subprocess.check_output('rm -rf single_default.pkl', shell = True)
 
@@ -115,81 +115,178 @@ layout = html.Div([
     # Row: Sequence boxes
     ###################################################
     html.Div([
-      # Item
+
+      # Top row
       html.Div(
         [
-          dcc.Input(
-            id = 'S_textbox', 
-            size = '28',
-            value = default_text,
-            type = 'text',
-            autoFocus = True,
-            style = dict(
-              fontFamily = 'monospace',
-              fontSize = 16,
-              # float = 'left',
-              transform = 'translateX(50%)',
-            ),
-          )
+
+          # Left half
+          html.Div(
+            [
+
+              html.Strong(
+                'Target genomic DNA: ',
+                style = dict(
+                  transform = 'translate(25%, 25%)',
+                ),
+                className = 'five columns',
+              ),
+
+              # Input text box: Target sequence
+              dcc.Input(
+                id = 'S_textbox', 
+                size = '28',
+                value = default_text,
+                type = 'text',
+                debounce = True,
+                maxLength = 500,
+                minLength = 50,
+                persistence = True,
+                autoFocus = True,
+                style = dict(
+                  fontFamily = 'monospace',
+                  fontSize = 16,
+                  # float = 'left',
+                  # transform = 'translateX(-40px)',
+                ),
+                className = 'seven columns',
+              ),
+            ],
+            className = 'six columns',
+          ),
+
+          # Right half
+          html.Div(
+            [
+              html.Span(
+                'Base editor / cell type:',
+                style = dict(
+                  transform = 'translate(35%, 25%)',
+                ),
+                className = 'six columns',
+              ),
+
+              # Item
+              dcc.Dropdown(
+                id = 'S_editor_dropdown',
+                options = lib.editor_celltype_dropdown_options,
+                value = 'BE4, mES',
+                searchable = True,
+                clearable = False,
+                persistence = True,
+                style = dict(
+                  fontFamily = 'monospace',
+                  fontSize = 16,
+                ),
+                className = 'six columns'
+              ),
+            ],
+            className = 'six columns'
+          ),
+
         ],
-        className = 'dna_textbox',
+        className = 'row',
       ),
 
-      ], style = dict(
-        verticalAlign = 'center',
-        whiteSpace = 'nowrap',
-        overflowX = 'auto',
-      ),
-    ),
+      # Bottom row
+      html.Div(
+        [
+          # Left half
+          html.Div(
+            [
+              html.Strong(
+                'CRISPR protospacer: ',
+                style = dict(
+                  transform = 'translate(25%, 25%)',
+                ),
+                className = 'five columns',
+              ),
 
-    ###################################################
-    # Row: Options
-    ###################################################
-    html.Div([
-      # Item
-      html.Div('',
-        className = 'three columns',
-      ),
+              # Input text box: Protospacer
+              dcc.Dropdown(
+                id = 'S_protospacer_dropdown', 
+                searchable = True,
+                clearable = False,
+                persistence = True,
+                style = dict(
+                  fontFamily = 'monospace',
+                  fontSize = 16,
+                  transform = 'translateX(10px)',
+                  # transform = 'translateX(20px)',
+                ),
+                className = 'six columns',
+              ),
 
-      # Item
-      dcc.Dropdown(
-        id = 'S_editor_dropdown',
-        options = lib.editor_celltype_dropdown_options,
-        value = 'BE4, mES',
-        searchable = True,
-        clearable = False,
-        style = dict(
-          fontFamily = 'monospace',
-          fontSize = 16,
-        ),
-        className = 'three columns'
-      ),
+              # Tooltip
+              html.Div(
+                [
+                  html.Div(
+                    [
+                      html.Img(
+                        src = app.get_asset_url('tooltip_logo.png'),
+                        className = 'tooltiplogo'
+                      ),
+                      html.Span(
+                        "Must have ≥20 nt on 5' side and ≥10 nt on 3' side in target genomic DNA to be included", 
+                        className = 'tooltiptext'
+                      ),
+                    ], 
+                    style = dict(
+                      transform = 'translate(10px, 8px)',
+                    ),
+                    className = 'tooltip',
+                  ),
+                ], 
+                className = 'one columns'
+              ),
 
-      # Item
-      dcc.Dropdown(
-        id = 'S_aa_frame_dropdown',
-        options = [
-          {'label': 'None', 'value': 'None'},
-          {'label': 'Frame 1, + strand', 'value': '1,+'},
-          {'label': 'Frame 2, + strand', 'value': '2,+'},
-          {'label': 'Frame 3, + strand', 'value': '3,+'},
-          {'label': 'Frame 1, - strand', 'value': '1,-'},
-          {'label': 'Frame 2, - strand', 'value': '2,-'},
-          {'label': 'Frame 3, - strand', 'value': '3,-'},
+            ],
+            className = 'six columns'
+          ),
+
+          # Right half
+          html.Div(
+            [
+              html.Span(
+                'Amino acid frame:',
+                style = dict(
+                  transform = 'translate(35%, 25%)',
+                ),
+                className = 'six columns',
+              ),
+
+              dcc.Dropdown(
+                id = 'S_aa_frame_dropdown',
+                options = [
+                  {'label': 'None', 'value': 'None'},
+                  {'label': 'Frame 1, + strand', 'value': '1,+'},
+                  {'label': 'Frame 2, + strand', 'value': '2,+'},
+                  {'label': 'Frame 3, + strand', 'value': '3,+'},
+                  {'label': 'Frame 1, - strand', 'value': '1,-'},
+                  {'label': 'Frame 2, - strand', 'value': '2,-'},
+                  {'label': 'Frame 3, - strand', 'value': '3,-'},
+                ],
+                value = 'None',
+                searchable = True,
+                persistence = True,
+                clearable = False,
+                style = dict(
+                  fontFamily = 'monospace',
+                  fontSize = 16,
+                ),
+                className = 'five columns'
+              ),
+
+              html.Div('', 
+                className = 'one columns'
+              ),
+
+            ],
+            className = 'six columns',
+          ),
+
         ],
-        value = 'None',
-        searchable = True,
-        clearable = False,
-        style = dict(
-          fontFamily = 'monospace',
-          fontSize = 16,
-        ),
-        className = 'three columns'
-      ),
-
-      # Item
-      html.Div('',
-        className = 'three columns',
+        className = 'row',
       ),
 
       ], 
@@ -197,7 +294,6 @@ layout = html.Div([
         marginBottom = '5px',
         marginTop = '10px',
       ),
-      className = 'row',
     ),
 
     # Row
@@ -346,7 +442,7 @@ layout = html.Div([
       # header
       html.Div([
         html.Div([
-          html.Strong('Base editing outcomes: DNA sequence')
+          html.Strong('Base editing outcomes among edited reads: DNA sequence')
           ],
           className = 'module_header_text'),
         ],
@@ -366,7 +462,7 @@ layout = html.Div([
             staticPlot = True,
           ),
           style = dict(
-            height = 290,
+            height = 340,
             width = 629,
           ),
           className = 'twelve columns',
@@ -387,7 +483,7 @@ layout = html.Div([
         # header
         html.Div([
           html.Div([
-            html.Strong('Base editing outcomes: Amino acid sequence')
+            html.Strong('Base editing outcomes among edited reads: Amino acid sequence')
             ],
             className = 'module_header_text'),
           ],
@@ -483,6 +579,7 @@ def update_aaframe_choice(val):
   '''
   return val
 
+
 ##
 # Prediction caching
 ##
@@ -507,28 +604,70 @@ def efficiency_predict_cache(seq, base_editor, celltype):
   )
   return pred_d
 
+
 ##
 # Prediction callbacks
 ##
 @app.callback(
   Output('S_hidden_pred_signal_bystander', 'children'),
   [Input('S_textbox', 'value'),
+   Input('S_protospacer_dropdown', 'value'),
    Input('S_hidden_chosen_base_editor', 'children'),
    Input('S_hidden_chosen_celltype', 'children')])
-def bystander_predict(seq, base_editor, celltype):
+def bystander_predict(seq, ps, base_editor, celltype):
   seq = seq.upper()
+  [protospacer, index] = ps.split()
+  index = int(index)
+  seq = seq[index - 20 : index + 30]
   bystander_predict_cache(seq, base_editor, celltype)
   return '%s,%s,%s' % (seq, base_editor, celltype)
 
 @app.callback(
   Output('S_hidden_pred_signal_efficiency', 'children'),
   [Input('S_textbox', 'value'),
+   Input('S_protospacer_dropdown', 'value'),
    Input('S_hidden_chosen_base_editor', 'children'),
    Input('S_hidden_chosen_celltype', 'children')])
-def efficiency_predict(seq, base_editor, celltype):
+def efficiency_predict(seq, ps, base_editor, celltype):
   seq = seq.upper()
+  [protospacer, index] = ps.split()
+  index = int(index)
+  seq = seq[index - 20 : index + 30]
   efficiency_predict_cache(seq, base_editor, celltype)
   return '%s,%s,%s' % (seq, base_editor, celltype)
+
+
+##
+# Protospacers
+##
+@app.callback(
+  Output('S_protospacer_dropdown', 'options'),
+  [Input('S_textbox', 'value')]
+  )
+def update_protospacers(seq):
+  protospacers, poss, unique_flags = lib.find_protospacers(seq)
+
+  options = []
+  for protospacer, pos, unique_flag in zip(protospacers, poss, unique_flags):
+    if unique_flag:
+      d = {
+        'label': f'{protospacer}',
+        'value': f'{protospacer}, {pos}',
+      }
+    else:
+      d = {
+        'label': f'{protospacer}, {pos}',
+        'value': f'{protospacer}, {pos}',
+      }
+    options.append(d)
+  return options
+
+@app.callback(
+  Output('S_protospacer_dropdown', 'value'),
+  [Input('S_protospacer_dropdown', 'options')]
+  )
+def update_protospacer_choice(options):
+  return options[0]['value']
 
 ###########################################
 ########     Module callbacks     #########
@@ -586,7 +725,7 @@ def update_efficiency_mean_text(chosen_mean, signal):
     html.Span(f'If the average editing efficiency is {100*chosen_mean:.1f}%, ',
     ),
     html.Div([
-      html.Img(src = '/assets/tooltip_logo.png', className = 'tooltiplogo'),
+      html.Img(src = app.get_asset_url('tooltip_logo.png'), className = 'tooltiplogo'),
       html.Span(tooltip_msg, className = 'tooltiptext'),
       ], className = 'tooltip',
     ),
@@ -712,7 +851,7 @@ def update_gt_table(signal):
   ## Set up data
   top10 = pred_df.iloc[:10]
   fqs = top10['Predicted frequency']
-  fq_strings = [''] + [f'{100*s:.1f}%' for s in fqs]
+  fq_strings = ['']*4 + [f'{100*s:.1f}%' for s in fqs]
 
   poswise_total = {col: sum(pred_df.loc[pred_df[col] != col[0], 'Predicted frequency']) for col in nt_cols}
 
@@ -726,6 +865,41 @@ def update_gt_table(signal):
     pos_col = []
     col_fill_colors = []
     col_font_colors = []
+
+    # row for protospacer position numbers
+    idx_to_num = {
+      20: 1,
+      24: 5,
+      29: 1,
+      30: 0,
+      34: 1,
+      35: 5,
+      39: 2,
+      40: 0,
+    }
+    if gt_idx in idx_to_num:
+      pos_col.append(idx_to_num[gt_idx])
+    else:
+      pos_col.append('')
+    col_font_colors.append('black')
+    col_fill_colors.append('white')
+
+    # row for |
+    vert_idxs = [20, 24, 29, 34, 39]
+    if gt_idx in vert_idxs:
+      pos_col.append('|')
+    else:
+      pos_col.append('')
+    col_font_colors.append('rgb(208, 211, 214)')
+    col_fill_colors.append('white')
+
+    # row for protospacer
+    if gt_idx >= 20 and gt_idx < 40:
+      pos_col.append(ref_nt)
+    else:
+      pos_col.append('')
+    col_font_colors.append('black')
+    col_fill_colors.append('white')
 
     # row for target_seq 
     # Text
@@ -890,6 +1064,41 @@ def update_aa_table(signal, aa_frame_txt):
     col_fill_colors = []
     col_font_colors = []
 
+    # row for protospacer position numbers
+    idx_to_num = {
+      20: 1,
+      24: 5,
+      29: 1,
+      30: 0,
+      34: 1,
+      35: 5,
+      39: 2,
+      40: 0,
+    }
+    if gt_idx in idx_to_num:
+      pos_col.append(idx_to_num[gt_idx])
+    else:
+      pos_col.append('')
+    col_font_colors.append('black')
+    col_fill_colors.append('white')
+
+    # row for |
+    vert_idxs = [20, 24, 29, 34, 39]
+    if gt_idx in vert_idxs:
+      pos_col.append('|')
+    else:
+      pos_col.append('')
+    col_font_colors.append('rgb(208, 211, 214)')
+    col_fill_colors.append('white')
+
+    # row for protospacer
+    if gt_idx >= 20 and gt_idx < 40:
+      pos_col.append(ref_nt)
+    else:
+      pos_col.append('')
+    col_font_colors.append('black')
+    col_fill_colors.append('white')
+
     # Ref. amino acid seq row
     # Text and text
     ref_aa = whitespaced_target_aas[gt_idx]
@@ -950,7 +1159,7 @@ def update_aa_table(signal, aa_frame_txt):
     fontcolors.append(col_font_colors)
 
   # Get frequency strings
-  fq_strings = ['', '', '']
+  fq_strings = ['', '', '', '', '', '']
   fq_string_fontcolors = ['white', 'white', 'white']
   for aa_seq in aa_to_fq:
     aa_fq = aa_to_fq[aa_seq]
@@ -996,7 +1205,7 @@ def update_aa_table(signal, aa_frame_txt):
       font = dict(
         family = 'monospace',
       ),
-      height = 60 + 20 * num_rows + 20,
+      height = 120 + 20 * num_rows + 20,
       width = 629,
       margin = dict(
         l = 10,

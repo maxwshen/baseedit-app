@@ -1,6 +1,7 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+from app_holder import app
 
 divider_text = '   •   '
 
@@ -35,9 +36,33 @@ def get_navigation_header(page_nm):
 
   return html.Div(
     [
-      html.H4(
-        'BE-Hive',
+      # html.H4(
+      #   'BE-Hive',
+      #   style = dict(
+      #     textAlign = 'center',
+      #   ),
+      # ),
+      html.Div(
+        [
+          html.Img(
+            src = app.get_asset_url('bee.png'), 
+            style = dict(
+              height = '32px',
+              verticalAlign = 'top',
+              marginRight = 5,
+            ),
+          ),
+          html.Span(
+            'BE-Hive',
+            style = dict(
+              textAlign = 'center',
+              fontSize = 26,
+            ),
+          ),
+        ],
         style = dict(
+          marginTop = 8,
+          marginBottom = 8,
           textAlign = 'center',
         ),
       ),
