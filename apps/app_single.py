@@ -322,6 +322,107 @@ layout = html.Div([
   # Body / plots
   ##
   html.Div([
+
+    ###################################################
+    # Module: Bystander, DNA
+    ###################################################
+    html.Div([
+      # header
+      html.Div([
+        html.Div([
+          html.Strong('Base editing outcomes among edited reads: DNA sequence')
+          ],
+          className = 'module_header_text'),
+        ],
+        className = 'module_header'
+      ),
+
+      # Row
+      html.Div([
+        # Item
+        # Text table
+        dcc.Graph(
+          id = 'S_bystander_gt_table',
+          config = dict(
+            modeBarButtonsToRemove = modebarbuttons_2d,
+            displaylogo = False,
+            displayModeBar = False,
+            staticPlot = True,
+          ),
+          style = dict(
+            height = 340,
+            width = 629,
+          ),
+          className = 'twelve columns',
+        ),
+
+        ],
+        className = 'row',
+      ),
+
+      # Download link
+      html.Div(
+        [
+          html.Div(
+            html.A(
+              '📜 Download table of predictions', 
+              id = 'S_csv_download_link'
+            ),
+          ),
+        ], 
+        style = dict(
+          height = '30px',
+          textAlign = 'center',
+        ),
+      ),
+
+    ], className = 'module_style',
+    ),
+
+    ###################################################
+    # Module: Bystander, AA
+    ###################################################
+    html.Div([
+      html.Div([
+        # header
+        html.Div([
+          html.Div([
+            html.Strong('Base editing outcomes among edited reads: Amino acid sequence')
+            ],
+            className = 'module_header_text'),
+          ],
+          className = 'module_header'
+        ),
+
+        # Row
+        html.Div([
+          # Item
+          # Text table
+          dcc.Graph(
+            id = 'S_bystander_aa_table',
+            config = dict(
+              modeBarButtonsToRemove = modebarbuttons_2d,
+              displaylogo = False,
+              displayModeBar = False,
+              staticPlot = True,
+            ),
+            className = 'twelve columns',
+          ),
+          # Bar plot
+
+          ],
+          className = 'row',
+        ),
+
+        ], 
+        className = 'module_style', 
+      ),
+      ], 
+      id = 'S_bystander_module_container',
+      style = {'display': 'none'},
+      className = 'animate-bottom',
+    ),
+
     ###################################################
     # Module: Efficiency
     ###################################################
@@ -380,7 +481,7 @@ layout = html.Div([
         className = 'row',
       ),
 
-      # Row
+      # Row: Slider
       html.Div([
         # Item. 
         html.Div(
@@ -435,89 +536,6 @@ layout = html.Div([
     ], className = 'module_style',
     ),
 
-    ###################################################
-    # Module: Bystander, DNA
-    ###################################################
-    html.Div([
-      # header
-      html.Div([
-        html.Div([
-          html.Strong('Base editing outcomes among edited reads: DNA sequence')
-          ],
-          className = 'module_header_text'),
-        ],
-        className = 'module_header'
-      ),
-
-      # Row
-      html.Div([
-        # Item
-        # Text table
-        dcc.Graph(
-          id = 'S_bystander_gt_table',
-          config = dict(
-            modeBarButtonsToRemove = modebarbuttons_2d,
-            displaylogo = False,
-            displayModeBar = False,
-            staticPlot = True,
-          ),
-          style = dict(
-            height = 340,
-            width = 629,
-          ),
-          className = 'twelve columns',
-        ),
-
-        ],
-        className = 'row',
-      ),
-
-    ], className = 'module_style',
-    ),
-
-    ###################################################
-    # Module: Bystander, AA
-    ###################################################
-    html.Div([
-      html.Div([
-        # header
-        html.Div([
-          html.Div([
-            html.Strong('Base editing outcomes among edited reads: Amino acid sequence')
-            ],
-            className = 'module_header_text'),
-          ],
-          className = 'module_header'
-        ),
-
-        # Row
-        html.Div([
-          # Item
-          # Text table
-          dcc.Graph(
-            id = 'S_bystander_aa_table',
-            config = dict(
-              modeBarButtonsToRemove = modebarbuttons_2d,
-              displaylogo = False,
-              displayModeBar = False,
-              staticPlot = True,
-            ),
-            className = 'twelve columns',
-          ),
-          # Bar plot
-
-          ],
-          className = 'row',
-        ),
-
-        ], 
-        className = 'module_style', 
-      ),
-      ], 
-      id = 'S_bystander_module_container',
-      style = {'display': 'none'},
-      className = 'animate-bottom',
-    ),
 
     ###################################################
     # Module
@@ -1159,8 +1177,8 @@ def update_aa_table(signal, aa_frame_txt):
     fontcolors.append(col_font_colors)
 
   # Get frequency strings
-  fq_strings = ['', '', '', '', '', '']
-  fq_string_fontcolors = ['white', 'white', 'white']
+  fq_strings = [''] * 6
+  fq_string_fontcolors = ['white'] * 6
   for aa_seq in aa_to_fq:
     aa_fq = aa_to_fq[aa_seq]
 
@@ -1232,10 +1250,47 @@ def show_hide_aa_module(aa_frame_text, prev_style):
 ##
 # Download callbacks
 ##
+@app.callback(
+  Output('S_csv_download_link', 'href'), 
+  [Input('S_hidden_pred_signal_bystander', 'children'),
+   Input('S_hidden_chosen_aa_frame', 'children'),
+  ])
+def update_link(signal, aa_frame_txt):
+  seq, base_editor, celltype = signal.split(',')
+  pred_df, stats, nt_cols = bystander_predict_cache(seq, base_editor, celltype)
+
+  if aa_frame_txt != 'None':
+    aa_frame = int(aa_frame_txt[0]) - 1
+    aa_strand = aa_frame_txt[-1]
+    p0idx = 19
+    target_seq = stats['50-nt target sequence']
+    target_aas = lib.dna_to_aa(target_seq, aa_frame, aa_strand)
+    pred_df['Amino acid sequence'] = [lib.dna_to_aa(s, aa_frame, aa_strand) for s in pred_df['Genotype']]
+
+  for stat_col in stats:
+    pred_df[stat_col] = stats[stat_col]
+  pred_df['Amino acid frame and strand'] = aa_frame_txt
+
+  time = str(datetime.datetime.now()).replace(' ', '_').replace(':', '-')
+  link_fn = '/dash/urlToDownload?value={}'.format(time)
+  pred_df.to_csv('user-csvs/%s.csv' % (time))
+  return link_fn
 
 ##
 # Flask serving
 ##
+@app.server.route('/dash/urlToDownload') 
+def download_csv():
+  value = flask.request.args.get('value')
+  # create a dynamic csv or file here using `StringIO` 
+  # (instead of writing to the file system)
+  local_csv_fn = value.split('/')[-1]
+  return flask.send_file(
+    open('user-csvs/%s.csv' % (local_csv_fn), 'rb'),
+    mimetype = 'text/csv',
+    attachment_filename = 'BE-Hive_predictions.csv',
+    as_attachment = True,
+  )
 
 ##
 # Page link callback
