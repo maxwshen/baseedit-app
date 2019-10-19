@@ -213,7 +213,7 @@ layout = html.Div([
                 id = 'S_protospacer_dropdown', 
                 searchable = True,
                 clearable = False,
-                persistence = True,
+                persistence = False,
                 style = dict(
                   fontFamily = 'monospace',
                   fontSize = 16,
@@ -623,13 +623,13 @@ def update_genomic_DNA(timestamp, url, state):
   Output('S_protospacer_dropdown', 'value'),
   [Input('S_hidden_button_detect_pageload', 'n_clicks_timestamp')],
   [State('S_url', 'pathname'),
-   State('S_protospacer_dropdown', 'options')
+   State('S_textbox', 'value')
   ],
 )
-def update_protospacer(n_clicks, url, options):
+def update_protospacer(timestamp, url, seq):
   valid_flag, results_d = lib.parse_valid_url_path_single(url)
   if not valid_flag: 
-    return options[0]['value']
+    return f'{seq[20:40]}, 20'
   elif valid_flag:
     return results_d['protospacer']
     return f'{base_editor}, {celltype}'
@@ -641,7 +641,7 @@ def update_protospacer(n_clicks, url, options):
    State('S_aa_frame_dropdown', 'value')
   ],
 )
-def update_aa_frame(n_clicks, url, state):
+def update_aa_frame(timestamp, url, state):
   valid_flag, results_d = lib.parse_valid_url_path_single(url)
   if not valid_flag: 
     return state
