@@ -50,19 +50,19 @@ def __append_alphabet(output, alphabet):
       new_output.append(o + a)
   return new_output
 
-def parse_coded_seq_leftover(dd, coded_nm, leftover_nm):
+def parse_coded_seq_leftover(encoded_dna, leftover_dna):
   # Process encoded DNA
-  if len(dd[coded_nm]) != 1 and len(dd[coded_nm]) % 3 != 0:
+  if len(leftover_dna) != 1 and len(encoded_dna) % 3 != 0:
     return '-'
-  if dd[coded_nm] == '-':
-    return dd[leftover_nm]
+  if encoded_dna == '-':
+    return leftover_dna
 
   seq = ''
-  for jdx in range(0, len(dd[coded_nm]), 3):
-    w = dd[coded_nm][jdx : jdx + 3]
+  for jdx in range(0, len(encoded_dna), 3):
+    w = encoded_dna[jdx : jdx + 3]
     seq += code_to_dna[w]
-  if dd[leftover_nm] != '-':
-    seq += dd[leftover_nm]
+  if leftover_dna != '-':
+    seq += leftover_dna
   return seq
 
 def encode_dna(seq):
@@ -91,121 +91,151 @@ def encode_dna(seq):
 
 def parse_valid_url_path_single(url_path):
   ## Expected format:
-  # [celltype]_[encodedDNA]_[leftoverDNA]_[cutsite]
-  if url_path[:len('/single_')] != '/single_':
-    return False, None, None, None
+  if url_path[:len('/s_')] != '/s_': return False, None
 
-  url_path = url_path.replace('/single_', '')
-  if len(url_path) == 0 or '_' not in url_path:
-    return False, None, None, None
+  url_path = url_path.replace('/s_', '')
+  if len(url_path) == 0 or '_' not in url_path: return False, None
 
   parts = url_path.split('_')
-  cats = ['celltype', 'coded', 'leftover', 'cutsite']
-  if len(parts) != len(cats):
-    return False, None, None, None
-  dd = dict()
-  for idx, cat in enumerate(cats):
-    dd[cat] = parts[idx]
+  cats = [
+    'base_editor', 
+    'celltype', 
+    'encodeddna', 
+    'leftoverdna', 
+    'psidx', 
+    'aa_frame_txt'
+  ]
 
-  seq = parse_coded_seq_leftover(dd, 'coded', 'leftover')
-  return True, dd['celltype'], seq, int(dd['cutsite'])
+  if len(parts) != len(cats): return False, None
+  results_d = {cat: parts[idx] for idx, cat in enumerate(cats)}
 
-def encode_dna_to_url_path_single(seq, cutsite, celltype):
+  seq = parse_coded_seq_leftover(
+    results_d['encodeddna'], 
+    results_d['leftoverdna'],
+  )
+  results_d['seq'] = seq
+
+  psidx = int(results_d['psidx'])
+  results_d['protospacer'] = f'{seq[psidx : psidx + 20]}, {psidx}'
+
+  aaft = results_d['aa_frame_txt']
+  frame = int(aaft[0])
+  mapper = {
+    'p': '+',
+    'm': '-',
+  }
+  strand = mapper[aaft[1]]
+  results_d['aa_frame_txt_parsed'] = f'{frame},{strand}'
+
+  return True, results_d
+
+def encode_dna_to_url_path_single(seq, ps, base_editor, celltype, aa_frame_txt):
   seq = seq.upper()
   encodeddna, leftoverdna = encode_dna(seq)
-  return '/single_%s_%s_%s_%s' % (celltype, encodeddna, leftoverdna, cutsite)
+  [protospacer, ps_idx] = ps.split()
+
+  if aa_frame_txt != 'None':
+    aa_frame = int(aa_frame_txt[0])
+    aa_strand = aa_frame_txt[-1]
+    strand_to_text = {
+      '+': 'p',
+      '-': 'm',
+    }
+    aa_frame_txt = f'{aa_frame}{strand_to_text[aa_strand]}'
+
+  return f'/s_{base_editor}_{celltype}_{encodeddna}_{leftoverdna}_{ps_idx}_{aa_frame_txt}'
 
 
 ###############################################
 # Batch
 ###############################################
 
-def parse_valid_url_path_batch(url_path):
-  ## Expected format:
-  # [encodedDNA]_[leftoverDNA]_[pam in plaintext] + more
-  dd = dict()
-  if url_path[:len('/batch_')] != '/batch_':
-    return False, dd
+# def parse_valid_url_path_batch(url_path):
+#   ## Expected format:
+#   # [encodedDNA]_[leftoverDNA]_[pam in plaintext] + more
+#   dd = dict()
+#   if url_path[:len('/batch_')] != '/batch_':
+#     return False, dd
 
-  url_path = url_path.replace('/batch_', '')
-  if len(url_path) == 0 or '_' not in url_path:
-    return False, dd
+#   url_path = url_path.replace('/batch_', '')
+#   if len(url_path) == 0 or '_' not in url_path:
+#     return False, dd
 
-  parts = url_path.split('_')
-  cats = ['celltype', 'coded', 'leftover', 'pam', 'adv_flag', 'coded_spec', 'leftover_spec', 'adv_poi', 'adv_delstart', 'adv_delend', 'chosen_columns', 'sort_by', 'sort_dir', 'row_select']
-  if len(parts) != len(cats):
-    return False, dd
-  for idx, cat in enumerate(cats):
-    dd[cat] = parts[idx]
+#   parts = url_path.split('_')
+#   cats = ['celltype', 'coded', 'leftover', 'pam', 'adv_flag', 'coded_spec', 'leftover_spec', 'adv_poi', 'adv_delstart', 'adv_delend', 'chosen_columns', 'sort_by', 'sort_dir', 'row_select']
+#   if len(parts) != len(cats):
+#     return False, dd
+#   for idx, cat in enumerate(cats):
+#     dd[cat] = parts[idx]
 
-  dd['seq'] = parse_coded_seq_leftover(dd, 'coded', 'leftover')
-  dd['adv_seq_spec'] = parse_coded_seq_leftover(dd, 'coded_spec', 'leftover_spec')
+#   dd['seq'] = parse_coded_seq_leftover(dd, 'coded', 'leftover')
+#   dd['adv_seq_spec'] = parse_coded_seq_leftover(dd, 'coded_spec', 'leftover_spec')
 
-  # Reword some values
-  if dd['adv_flag'] == '1':
-    dd['adv_flag'] = True
-  elif dd['adv_flag'] == '0':
-    dd['adv_flag'] = False
+#   # Reword some values
+#   if dd['adv_flag'] == '1':
+#     dd['adv_flag'] = True
+#   elif dd['adv_flag'] == '0':
+#     dd['adv_flag'] = False
 
-  if dd['sort_dir'] == '1':
-    dd['sort_dir'] = 'Ascending'
-  else:
-    dd['sort_dir'] = 'Descending'
+#   if dd['sort_dir'] == '1':
+#     dd['sort_dir'] = 'Ascending'
+#   else:
+#     dd['sort_dir'] = 'Descending'
 
-  return True, dd
+#   return True, dd
 
-def encode_dna_to_url_path_batch(seq, pam, celltype, adv_flag, adv_seq_spec, adv_poi, adv_delstart, adv_delend, chosen_columns, column_options, sort_by, sort_dir, selected_row):
-  seq, pam = seq.upper(), pam.upper()
-  edna, ldna = encode_dna(seq)
-  edna2, ldna2 = encode_dna(adv_seq_spec)
+# def encode_dna_to_url_path_batch(seq, pam, celltype, adv_flag, adv_seq_spec, adv_poi, adv_delstart, adv_delend, chosen_columns, column_options, sort_by, sort_dir, selected_row):
+#   seq, pam = seq.upper(), pam.upper()
+#   edna, ldna = encode_dna(seq)
+#   edna2, ldna2 = encode_dna(adv_seq_spec)
 
-  if adv_flag == True:
-    adv_flag_val = '1'
-  else:
-    adv_flag_val = '0'
+#   if adv_flag == True:
+#     adv_flag_val = '1'
+#   else:
+#     adv_flag_val = '0'
 
-  adv_poi = transform_empty_value_to_dash(adv_poi)
-  adv_delstart = transform_empty_value_to_dash(adv_delstart)
-  adv_delend = transform_empty_value_to_dash(adv_delend)
-  sort_by = transform_empty_value_to_dash(sort_by)
+#   adv_poi = transform_empty_value_to_dash(adv_poi)
+#   adv_delstart = transform_empty_value_to_dash(adv_delstart)
+#   adv_delend = transform_empty_value_to_dash(adv_delend)
+#   sort_by = transform_empty_value_to_dash(sort_by)
 
-  binary_flags_chosen_cols = ''
-  for co in sorted([s['value'] for s in column_options]):
-    if co in chosen_columns:
-      binary_flags_chosen_cols += '1'
-    else:
-      binary_flags_chosen_cols += '0'
+#   binary_flags_chosen_cols = ''
+#   for co in sorted([s['value'] for s in column_options]):
+#     if co in chosen_columns:
+#       binary_flags_chosen_cols += '1'
+#     else:
+#       binary_flags_chosen_cols += '0'
 
-  if sort_by != '-':
-    sort_by = sorted(chosen_columns).index(sort_by)
+#   if sort_by != '-':
+#     sort_by = sorted(chosen_columns).index(sort_by)
 
-  if sort_dir == 'Ascending':
-    sort_dir_val = '1'
-  else:
-    sort_dir_val = '0'
+#   if sort_dir == 'Ascending':
+#     sort_dir_val = '1'
+#   else:
+#     sort_dir_val = '0'
 
-  if selected_row == []:
-    selected_row_val = '-'
-  else:
-    selected_row_val = selected_row[0]
+#   if selected_row == []:
+#     selected_row_val = '-'
+#   else:
+#     selected_row_val = selected_row[0]
 
-  items = [
-    celltype,
-    edna, 
-    ldna, 
-    pam, 
-    adv_flag_val, 
-    edna2, 
-    ldna2, 
-    adv_poi, 
-    adv_delstart, 
-    adv_delend, 
-    binary_flags_chosen_cols, 
-    sort_by, 
-    sort_dir_val, 
-    selected_row_val
-  ]
-  return '/batch_%s' % ('_'.join([str(s) for s in items]))
+#   items = [
+#     celltype,
+#     edna, 
+#     ldna, 
+#     pam, 
+#     adv_flag_val, 
+#     edna2, 
+#     ldna2, 
+#     adv_poi, 
+#     adv_delstart, 
+#     adv_delend, 
+#     binary_flags_chosen_cols, 
+#     sort_by, 
+#     sort_dir_val, 
+#     selected_row_val
+#   ]
+#   return '/batch_%s' % ('_'.join([str(s) for s in items]))
 
 def transform_empty_value_to_dash(val):
   if val is None or len(val) == 0 or val == 'None':

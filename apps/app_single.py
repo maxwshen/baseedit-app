@@ -96,6 +96,12 @@ layout = html.Div([
         id = 'S_url',
         refresh = False,
       ),
+
+      html.Button(
+        id = 'S_hidden_button_detect_pageload',
+        n_clicks_timestamp = 0,
+      ),
+
     ],
     style = dict(
       display = 'none',
@@ -533,6 +539,21 @@ layout = html.Div([
         ),
       ),
 
+      html.Div(
+        [
+          html.Div(
+            html.A(
+              '🔗 Shareable link to your results', 
+              id = 'S_page_link'
+            ),
+          ),
+        ], 
+        style = dict(
+          height = '30px',
+          textAlign = 'center',
+        ),
+      ),
+
     ], className = 'module_style',
     ),
 
@@ -566,11 +587,75 @@ layout = html.Div([
 #######################################################################
 
 ##
+# Input callbacks -- update with URL
+##
+@app.callback(
+  Output('S_editor_dropdown', 'value'),
+  [Input('S_hidden_button_detect_pageload', 'n_clicks_timestamp')],
+  [State('S_url', 'pathname'),
+   State('S_editor_dropdown', 'value')
+  ],
+)
+def update_editor(timestamp, url, state):
+  valid_flag, results_d = lib.parse_valid_url_path_single(url)
+  if not valid_flag: 
+    return state
+  elif valid_flag:
+    base_editor = results_d['base_editor']
+    celltype = results_d['celltype']
+    return f'{base_editor}, {celltype}'
+
+@app.callback(
+  Output('S_textbox', 'value'),
+  [Input('S_hidden_button_detect_pageload', 'n_clicks_timestamp')],
+  [State('S_url', 'pathname'),
+   State('S_textbox', 'value')
+  ],
+)
+def update_genomic_DNA(timestamp, url, state):
+  valid_flag, results_d = lib.parse_valid_url_path_single(url)
+  if not valid_flag: 
+    return state
+  elif valid_flag:
+    return results_d['seq']
+
+@app.callback(
+  Output('S_protospacer_dropdown', 'value'),
+  [Input('S_hidden_button_detect_pageload', 'n_clicks_timestamp')],
+  [State('S_url', 'pathname'),
+   State('S_protospacer_dropdown', 'options')
+  ],
+)
+def update_protospacer(n_clicks, url, options):
+  valid_flag, results_d = lib.parse_valid_url_path_single(url)
+  if not valid_flag: 
+    return options[0]['value']
+  elif valid_flag:
+    return results_d['protospacer']
+    return f'{base_editor}, {celltype}'
+
+@app.callback(
+  Output('S_aa_frame_dropdown', 'value'),
+  [Input('S_hidden_button_detect_pageload', 'n_clicks_timestamp')],
+  [State('S_url', 'pathname'),
+   State('S_aa_frame_dropdown', 'value')
+  ],
+)
+def update_aa_frame(n_clicks, url, state):
+  valid_flag, results_d = lib.parse_valid_url_path_single(url)
+  if not valid_flag: 
+    return state
+  elif valid_flag:
+    return results_d['aa_frame_txt_parsed']
+    return f'{base_editor}, {celltype}'
+
+##
 # Hidden data callbacks
 ## 
 @app.callback(
   Output('S_hidden_chosen_base_editor', 'children'),
-  [Input('S_editor_dropdown', 'value')])
+  [Input('S_editor_dropdown', 'value'),
+  ])
 def update_editor_choice(val):
   [editor, celltype] = [s.strip() for s in val.split(',')]
   return editor
@@ -680,12 +765,6 @@ def update_protospacers(seq):
     options.append(d)
   return options
 
-@app.callback(
-  Output('S_protospacer_dropdown', 'value'),
-  [Input('S_protospacer_dropdown', 'options')]
-  )
-def update_protospacer_choice(options):
-  return options[0]['value']
 
 ###########################################
 ########     Module callbacks     #########
@@ -1295,3 +1374,22 @@ def download_csv():
 ##
 # Page link callback
 ##
+@app.callback(
+  Output('S_page_link', 'href'),
+  [Input('S_textbox', 'value'),
+   Input('S_protospacer_dropdown', 'value'),
+   Input('S_hidden_chosen_base_editor', 'children'),
+   Input('S_hidden_chosen_celltype', 'children'),
+   Input('S_hidden_chosen_aa_frame', 'children'),
+   ])
+def update_pagelink(seq, ps, base_editor, celltype, aa_frame_txt):
+  url = lib.encode_dna_to_url_path_single(
+    seq, 
+    ps, 
+    base_editor, 
+    celltype,
+    aa_frame_txt,
+  )
+  return f'{url}'
+
+
