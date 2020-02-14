@@ -6,7 +6,7 @@ from dash.dependencies import Input, Output, State
 import flask
 
 from app_holder import app
-from apps import app_single
+from apps import app_single, app_efficiency
 
 
 ###################################################################
@@ -36,6 +36,8 @@ def display_page(pathname):
     return app_single.layout
   elif pathname[:len('/batch')] == '/batch':
     return app_batch.layout
+  elif pathname[:len('/efficiency')] == '/efficiency':
+    return app_efficiency.layout
   elif pathname[:len('/guide')] == '/guide':
     return app_guide.layout
   elif pathname[:len('/about')] == '/about':

@@ -28,7 +28,7 @@ def get_navigation_header(page_nm):
   selected_style['borderBottom'] = '1px solid'
 
   styles = dict()
-  for nm in ['single', 'batch', 'gene', 'guide', 'about']:
+  for nm in ['single', 'batch', 'efficiency', 'guide', 'about']:
     if page_nm == nm:
       styles[nm] = selected_style
     else:
@@ -88,9 +88,9 @@ def get_navigation_header(page_nm):
             divider_text,
           ),
           html.A(
-            'Gene mode',
-            href = 'gene',
-            style = styles['gene'],
+            'Editor efficiencies',
+            href = 'efficiency',
+            style = styles['efficiency'],
             className = 'dynamicunderline',
           ),
           html.Span(

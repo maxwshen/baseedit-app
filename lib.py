@@ -512,6 +512,18 @@ rgb = {
   'gray': 'rgb(134, 137, 140)',
 }
 
+editor_cmap = {
+  'ABE': rgb['red'],
+  'ABE8': rgb['red'],
+  'BE4': 'rgb(0, 160, 220)',
+  'BE4-CP1028': rgb['blue'],
+  'eA3A': 'rgb(140, 104, 203)',
+  'AID': rgb['green'],
+  'CDA': 'rgb(239, 185, 23)',
+  'ABE-CP1040': rgb['orange'],
+  'evoAPOBEC': 'rgb(237, 71, 149)',
+}
+
 aa_cmap = {
   'A': 'rgba(174, 214, 119, 0.5)',
   'G': 'rgba(199, 229, 154, 0.5)',
