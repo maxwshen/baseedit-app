@@ -539,7 +539,7 @@
                 "sha256:e6525572b8e91095d0252c6d4cb2936c551a044c4650857da7ce6dc294178b9f",
                 "sha256:fb8ea1e2f9d40dbd61eafaadf302dd062df5c3793f74599692443fdee7f9707b"
             ],
-            "version": "==0.3.0"
+            "version": "==0.5.0"
         },
         "werkzeug": {
             "hashes": [
