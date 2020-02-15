@@ -44,4 +44,4 @@ torchvision==0.5.0
 update==0.0.1
 Werkzeug==0.15.6
 whitenoise==4.1.3
-https://download.pytorch.org/whl/cpu/torch-1.1.0-cp37-cp37m-linux_x86_64.whl ; sys_platform == "linux"
+https://download.pytorch.org/whl/cpu/torch-1.4.0%2Bcpu-cp37-cp37m-linux_x86_64.whl ; sys_platform == "linux"
