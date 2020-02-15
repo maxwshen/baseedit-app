@@ -24,6 +24,7 @@ django-heroku = "*"
 "3ae9ae8" = {file = "https://download.pytorch.org/whl/cpu/torchvision-0.3.0-cp37-cp37m-linux_x86_64.whl"}
 scikit-learn = "==0.20.3"
 biopython = "*"
+torchvision = "==0.5.0"
 
 [requires]
 python_version = "3.7"
