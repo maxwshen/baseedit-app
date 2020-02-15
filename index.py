@@ -6,7 +6,9 @@ from dash.dependencies import Input, Output, State
 import flask
 
 from app_holder import app
-from apps import app_single, app_efficiency
+from apps import app_single
+from apps import app_batch
+from apps import app_efficiency
 
 
 ###################################################################

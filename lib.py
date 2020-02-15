@@ -1,5 +1,6 @@
 import numpy as np, pandas as pd
 import plotly, os, sys
+from collections import defaultdict
 
 app_fold = os.path.dirname(os.path.realpath(__file__)) + '/'
 
@@ -314,6 +315,8 @@ def encode_url_path_gene(genome_build, gene, celltype, chosen_columns, column_op
 ###############################################
 bystander_models_design = pd.read_csv(app_fold + f'be_predict_bystander/models.csv', index_col = 0)
 editor_celltype_dropdown_options = []
+batch_dropdown_options = []
+type_to_bes = defaultdict(list)
 '''
   options = [
     {'label': '1-bp insertions', 'value': '1-bp insertions'},
@@ -321,10 +324,20 @@ editor_celltype_dropdown_options = []
 for idx, row in bystander_models_design.iterrows():
   editor = row['Public base editor']
   celltype = row['Celltype']
+  be_type = row['Public base editor type']
   editor_celltype_dropdown_options.append({
     'label': f'{editor}, {celltype}',
     'value': f'{editor}, {celltype}',
   })
+
+  batch_option = {
+    'label': f'{be_type}, {celltype}',
+    'value': f'{be_type}, {celltype}',
+  }
+  if batch_option not in batch_dropdown_options:
+    batch_dropdown_options.append(batch_option)
+
+  type_to_bes[f'{be_type}, {celltype}'].append(editor)
 
 ###############################################
 # Compbio operations
@@ -586,6 +599,13 @@ dna_color_scales = {
   ) for nt in dna_color_minmax
 }
 
+gray_color_scale = plotly.colors.n_colors(
+  'rgba(230, 233, 236, 1)',
+  'rgba(115, 118, 121, 1)',
+  num_colors_in_ref, 
+  colortype = 'rgb'
+)
+
 def get_color(scale, val, white_threshold = 0):
   # val in [0, 1]. scale = list of colors. assumed to be more white at 0
   if val < white_threshold: return 'white'
@@ -599,45 +619,25 @@ def get_color(scale, val, white_threshold = 0):
 ###############################################
 # Alignment text presentation
 ###############################################
-def trim_alignment(gt, cutsite, name):
-  radius = 26
-  if name == 'ins':
-    trim_cand = gt[cutsite - radius : cutsite + radius + 1]
-    if len(trim_cand) == 2*radius + 1:
-      return trim_cand
-    else:
-      return gt
-  else:
-    trim_cand = gt[cutsite - radius : cutsite + radius + 1]
-    if len(trim_cand) == 2*radius + 1:
-      return trim_cand
-    else:
-      return gt
-  return
+'''
+  Keep to 4 chars max
+'''
+editor_to_header = {
+  'BE4': ['BE4'],
+  'CDA': ['CDA'],
+  'AID': ['AID'],
+  'evoAPOBEC': ['evoA'],
+  'ABE': ['ABE'],
+  'eA3A': ['eA3A'],
+  'eA3A-T31A': ['eA3A', 'T31A'],
+  'eA3A-T31AT44A': ['eA3A', 'T31A', 'T44A'],
+  'eA3A-T44DS45A': ['eA3A', 'T44D', 'S45A'],
+  'BE4-H47ES48A': ['BE4', 'H47E', 'S48A'],
+  'ABE8': ['ABE', '8e'],
+  'ABE-CP1040': ['ABE-', 'CP', '1040'],
+  'BE4-CP1028': ['BE4-', 'CP', '1028'],
+}
 
-def add_bar(seq, cutsite):
-  return seq[:cutsite] + '|' + seq[cutsite:]
-
-def get_gapped_alignments(top, stats):
-  cutsite = stats['Cutsite'].iloc[0]
-  gapped_aligns = []
-  for idx, row in top.iterrows():
-    gt = row['Genotype']
-    gt_pos = row['Genotype position']
-    length = row['Length']
-    cat = row['Category']
-    if cat == 'ins':
-      gapped_aligns.append(trim_alignment(gt, cutsite, 'ins'))
-      continue
-    if gt_pos == 'e':
-      gapped_aligns.append('multiple deletion genotypes')
-      continue
-
-    gt_pos = int(gt_pos)
-    gap_gt = gt[:cutsite - length + gt_pos] + '-'*length + gt[cutsite - length + gt_pos:]
-    gap_gt = add_bar(gap_gt, cutsite)
-    gapped_aligns.append(trim_alignment(gap_gt, cutsite, 'del'))
-  return gapped_aligns
 
 ###############################################
 # Batch mode: xaxis ticks 
