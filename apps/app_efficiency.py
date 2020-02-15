@@ -110,7 +110,7 @@ layout = html.Div([
       # header
       html.Div([
         html.Div([
-          html.Strong('Comparison of efficiency by base editor')
+          html.Strong('Comparison of mean base editing efficiency by base editor')
           ],
           className = 'module_header_text'),
         ],
@@ -218,7 +218,7 @@ layout = html.Div([
         html.Div(
           [
             html.Div(
-              'Base editing efficiencies were calculated in genome-integrated libraries of 12,000 sgRNA-target sites pairs designed with all 4-mers from protospacer positions 1-12. We performed logistic regression with a design matrix including covariates for 24 experimental batches, 3 cell-types, and each base editor. The fitted model has an R-squared value of 0.862.'
+              'Mean base editing efficiencies were calculated in genome-integrated libraries of 12,000 sgRNA-target sites pairs designed with all 4-mers from protospacer positions 1-12. We performed logistic regression with a design matrix including covariates for 24 experimental batches, 3 cell-types, and each base editor. The fitted model has an R-squared value of 0.862. This page is provided to relate average base editing efficiencies across editors. Importantly, editing efficiency at any single target site cannot be converted across editors using this page alone - sequence preferences also differ across editors. To obtain a predicted efficiency at a single target site across editors, you should first convert mean editing efficiency between editors, then plug in the mean editing efficiency into the single mode efficiency module.'
             ),
           ],
           style = dict(
