@@ -1480,3 +1480,57 @@ def show_hide_aa_module(aa_frame_text, prev_style):
   return prev_style
 
 
+##
+# Download
+##
+@app.callback(
+  Output('B_csv_download_link', 'href'), 
+  [Input('B_hidden_pred_signal_bystander_efficiency', 'children'),
+   Input('B_hidden_chosen_aa_frame', 'children'),
+   Input('B_use_efficiency', 'value'),
+  ])
+def update_link(signal, aa_frame_txt, use_efficiency):
+  seq, base_editor_type, celltype, efficiency_mean = signal.split(',')
+
+  if use_efficiency == 'no_efficiency':
+    pred_df, stats, nt_cols = bystander_predict_cache(seq, base_editor_type, celltype)
+  elif use_efficiency == 'efficiency':
+    pred_df, stats, nt_cols = bystander_efficiency_adjust_cache(seq, base_editor_type, celltype, efficiency_mean)
+
+  if aa_frame_txt != 'None':
+    aa_frame = int(aa_frame_txt[0]) - 1
+    aa_strand = aa_frame_txt[-1]
+    p0idx = 19
+    target_seq = stats['50-nt target sequence']
+    target_aas = lib.dna_to_aa(target_seq, aa_frame, aa_strand)
+    pred_df['Amino acid sequence'] = [lib.dna_to_aa(s, aa_frame, aa_strand) for s in pred_df['Genotype']]
+
+  for stat_col in stats:
+    pred_df[stat_col] = stats[stat_col]
+  pred_df['Amino acid frame and strand'] = aa_frame_txt
+
+  time = str(datetime.datetime.now()).replace(' ', '_').replace(':', '-')
+  link_fn = '/batchdl/urlToDownload?value={}'.format(time)
+  pred_df.to_csv('user-csvs/%s.csv' % (time))
+  return link_fn
+
+
+##
+# Flask serving
+##
+@app.server.route('/batchdl/urlToDownload') 
+def download_csv_batch():
+  value = flask.request.args.get('value')
+  # create a dynamic csv or file here using `StringIO` 
+  # (instead of writing to the file system)
+  local_csv_fn = value.split('/')[-1]
+  return flask.send_file(
+    open('user-csvs/%s.csv' % (local_csv_fn), 'rb'),
+    mimetype = 'text/csv',
+    attachment_filename = 'BE-Hive_predictions.csv',
+    as_attachment = True,
+  )
+
+
+
+
