@@ -1172,5 +1172,311 @@ def update_gt_table(signal, use_efficiency):
     ),
   )
 
+##
+# Bystander, amino acid table
+##
+@app.callback(
+  Output('B_bystander_aa_table', 'figure'),
+  [Input('B_hidden_pred_signal_bystander_efficiency', 'children'),
+   Input('B_hidden_chosen_aa_frame', 'children'),
+   Input('B_use_efficiency', 'value'),
+  ])
+def update_aa_table(signal, aa_frame_txt, use_efficiency):
+  seq, base_editor_type, celltype, efficiency_mean = signal.split(',')
+
+  if use_efficiency == 'no_efficiency':
+    pred_df, stats, nt_cols = bystander_predict_cache(seq, base_editor_type, celltype)
+  elif use_efficiency == 'efficiency':
+    pred_df, stats, nt_cols = bystander_efficiency_adjust_cache(seq, base_editor_type, celltype, efficiency_mean)
+
+  base_editors = lib.type_to_bes[f'{base_editor_type}, {celltype}']
+
+  # if aa_frame_txt == 'None': return []
+  aa_frame = int(aa_frame_txt[0]) - 1
+  aa_strand = aa_frame_txt[-1]
+
+  p0idx = 19
+  target_seq = stats['50-nt target sequence']
+  target_aas = lib.dna_to_aa(target_seq, aa_frame, aa_strand)
+  pred_df['Amino acid sequence'] = [lib.dna_to_aa(s, aa_frame, aa_strand) for s in pred_df['Genotype']]
+  aa_start_gap, aa_end_gap = lib.get_aa_display_start_idx(target_seq, aa_frame, aa_strand)
+
+  # Whitespace ref AA
+  whitespaced_target_aas = [' '] * aa_start_gap
+  fills_target_aas = ['white'] * aa_start_gap
+  for aa in target_aas:
+    whitespaced_target_aas.append(f' {aa} ')
+    fills_target_aas += [lib.aa_cmap[aa]] * 3
+  whitespaced_target_aas += [' '] * aa_end_gap
+  fills_target_aas += ['white'] * aa_end_gap
+  whitespaced_target_aas = ''.join(whitespaced_target_aas)
+
+  ## Set up data
+  df_fq_cols = [col for col in pred_df.columns if 'Predicted frequency' in col]
+  pred_df['Mean predicted frequency'] = pred_df[df_fq_cols].apply(np.nanmean, axis = 'columns')
+
+  subset_cols = ['Amino acid sequence', 'Mean predicted frequency'] + df_fq_cols
+  aa_fq_df = pred_df[subset_cols].groupby('Amino acid sequence').agg(sum).reset_index().sort_values(by = 'Mean predicted frequency', ascending = False)
+  aa_fq_df = aa_fq_df.iloc[:10]
+  aa_fq_df = aa_fq_df[aa_fq_df['Mean predicted frequency'] >= 0.01]
+
+  # Form amino acid whitespaced seqs, fill colors, font colors
+  editor_aa_to_fq = {editor: dict() for editor in base_editors}
+  editor_aa_to_gts = {editor: dict() for editor in base_editors}
+
+  aa_to_fillcolors = {}
+  aa_to_fontcolors = {}
+  num_rows = 0
+  for idx, row in aa_fq_df.iterrows():
+    aa_seq = row['Amino acid sequence']
+
+    whitespaced_aa_seq = [' '] * aa_start_gap
+    fills_aas = ['white'] * aa_start_gap
+    fontcolors_aas = ['white'] * aa_start_gap
+    for jdx, aa in enumerate(aa_seq):
+      target_aa = target_aas[jdx]
+      if aa == target_aa:
+        font_color = lib.font_cmap['match']
+        fill_color = 'white'
+      else:
+        font_color = lib.font_cmap['edited']
+        fill_color = lib.aa_cmap[aa]
+      whitespaced_aa_seq.append(f' {aa} ')
+      fills_aas += [fill_color] * 3
+      fontcolors_aas += [font_color] * 3
+    whitespaced_aa_seq += [' '] * aa_end_gap
+    fills_aas += ['white'] * aa_end_gap
+    fontcolors_aas += ['white'] * aa_end_gap
+    whitespaced_aa_seq = ''.join(whitespaced_aa_seq)
+
+    num_rows += 2
+
+    aa_to_fillcolors[whitespaced_aa_seq] = fills_aas
+    aa_to_fontcolors[whitespaced_aa_seq] = fontcolors_aas
+
+    dfs = pred_df[pred_df['Amino acid sequence'] == aa_seq]
+    dfs = dfs[dfs['Mean predicted frequency'] >= 0.005].sort_values(by = 'Mean predicted frequency', ascending = False)
+    num_rows += len(dfs)
+
+    for editor in base_editors:
+      editor_aa_to_fq[editor][whitespaced_aa_seq] = row[f'Predicted frequency, {editor}']
+      editor_aa_to_gts[editor][whitespaced_aa_seq] = list(zip(list(dfs['Genotype']), list(dfs[f'Predicted frequency, {editor}'])))
+
+  poswise_total = {col: sum(pred_df.loc[pred_df[col] != col[0], 'Mean predicted frequency']) for col in nt_cols}
+
+  ## Form table with colors
+  fillcolors = []
+  fontcolors = []
+  poswise_cols = []
+  for gt_idx, ref_nt in enumerate(target_seq):
+    pos = gt_idx - p0idx
+    cand_col = f'{ref_nt}{pos}'
+    pos_col = []
+    col_fill_colors = []
+    col_font_colors = []
+
+    # row for protospacer position numbers
+    idx_to_num = {
+      20: 1,
+      24: 5,
+      29: 1,
+      30: 0,
+      34: 1,
+      35: 5,
+      39: 2,
+      40: 0,
+    }
+    if gt_idx in idx_to_num:
+      pos_col.append(idx_to_num[gt_idx])
+    else:
+      pos_col.append('')
+    col_font_colors.append('black')
+    col_fill_colors.append('white')
+
+    # row for |
+    vert_idxs = [20, 24, 29, 34, 39]
+    if gt_idx in vert_idxs:
+      pos_col.append('|')
+    else:
+      pos_col.append('')
+    col_font_colors.append('rgb(208, 211, 214)')
+    col_fill_colors.append('white')
+
+    # row for protospacer
+    if gt_idx >= 20 and gt_idx < 40:
+      pos_col.append(ref_nt)
+    else:
+      pos_col.append('')
+    col_font_colors.append('black')
+    col_fill_colors.append('white')
+
+    # Ref. amino acid seq row
+    # Text and text
+    ref_aa = whitespaced_target_aas[gt_idx]
+    pos_col.append(ref_aa)
+    col_fill_colors.append(fills_target_aas[gt_idx])
+    col_font_colors.append('black')
+
+    # Ref. target_seq row
+    # Text
+    pos_col.append(ref_nt)
+    # Color
+    if cand_col not in nt_cols:
+      col_fill_colors.append('white')
+    else:
+      tot_edit_frac = poswise_total[cand_col]
+      color_scale = lib.dna_color_scales[ref_nt]
+      col_fill_colors.append(lib.get_color(color_scale, tot_edit_frac, white_threshold = 0.002))
+    col_font_colors.append('black')
+
+    # Blank row
+    pos_col.append('')
+    for col in col_fill_colors, col_font_colors:
+      col.append('white')
+
+    # rows for edited genotypes + aas
+    for aa_seq in editor_aa_to_fq[base_editors[0]]:
+
+      # Amino acid row
+      # Text and color
+      pos_col.append(aa_seq[gt_idx])
+      col_fill_colors.append(aa_to_fillcolors[aa_seq][gt_idx])
+      col_font_colors.append(aa_to_fontcolors[aa_seq][gt_idx])
+
+      for (gt_seq, gt_fq) in editor_aa_to_gts[base_editors[0]][aa_seq]:
+        obs_nt = gt_seq[gt_idx]
+
+        # Genotype row
+        # Text
+        # Color
+        pos_col.append(obs_nt)
+        if obs_nt == ref_nt:
+          col_fill_colors.append('white')
+          col_font_colors.append(lib.font_cmap['match'])
+        else:
+          color_scale = lib.dna_color_scales[obs_nt]
+          col_fill_colors.append(lib.get_color(color_scale, gt_fq))
+          col_font_colors.append(lib.font_cmap['edited'])
+
+      # Blank row
+      pos_col.append('')
+      for col in col_fill_colors, col_font_colors:
+        col.append('white')
+
+    # Finished iterating over one column
+    poswise_cols.append(pos_col)
+    fillcolors.append(col_fill_colors)
+    fontcolors.append(col_font_colors)
+
+  # Get frequency strings
+  fq_cols = []
+  fq_fillcolors = []
+  fq_fontcolors = []
+  for editor in base_editors:
+    aa_to_fq = editor_aa_to_fq[editor]
+    aa_to_gts = editor_aa_to_gts[editor]
+
+    fq_strings = []
+    curr_fills, curr_fonts = [], []
+
+    # Header
+    num_header_cols = 5
+    header = lib.editor_to_header[editor]
+    header_strings = [''] * (num_header_cols - len(header))
+    header_strings += header
+    for _ in range(num_header_cols):
+      fq_strings.append(header_strings[_])
+      curr_fills.append('white')
+      curr_fonts.append(lib.font_cmap['edited'])
+
+    # Blank row
+    fq_strings.append('')
+    curr_fonts.append('white')
+    curr_fills.append('white')
+
+    for aa_seq in aa_to_fq:
+      aa_fq = aa_to_fq[aa_seq]
+
+      fq_strings.append(f'{100*aa_fq:.0f}%')
+      if aa_fq < 0.02:
+        curr_fills.append('white')
+        curr_fonts.append(lib.font_cmap['match'])
+      else:
+        curr_fills.append(lib.get_color(lib.gray_color_scale, aa_fq))
+        curr_fonts.append(lib.font_cmap['edited'])
+
+      for (gt_seq, gt_fq) in aa_to_gts[aa_seq]:
+        fq_strings.append(f'{100*gt_fq:.0f}%')
+
+        if gt_fq < 0.02:
+          curr_fills.append('white')
+          curr_fonts.append(lib.font_cmap['match'])
+        else:
+          curr_fills.append(lib.get_color(lib.gray_color_scale, gt_fq))
+          curr_fonts.append(lib.font_cmap['edited'])
+
+      # Blank row
+      fq_strings.append('')
+      curr_fonts.append('white')
+      curr_fills.append('white')
+
+    fq_cols.append(fq_strings)
+    fq_fillcolors.append(curr_fills)
+    fq_fontcolors.append(curr_fonts)
+
+  # alignment_col_width = 420
+  # pos_col_width = alignment_col_width // len(poswise_cols)
+  pos_col_width = 1.2
+  fq_col_width = 5
+
+  return dict(
+    data = [go.Table(
+      columnwidth = [pos_col_width] * len(poswise_cols) + [fq_col_width] * len(fq_cols),
+      header = dict(
+        line = dict(width = 0),
+        fill = dict(color = 'white'),
+        height = 0,
+      ),
+      cells = dict(
+        values = poswise_cols + fq_cols,
+        align = ['center'] * len(poswise_cols) + ['right'] * len(fq_cols), 
+        fill = dict(
+          color = fillcolors + fq_fillcolors,
+        ),
+        line = dict(width = 0),
+        font = dict(
+          family = 'monospace',
+          color = fontcolors + fq_fontcolors,
+        ),
+        height = 20,
+      ),
+    )],
+    layout = go.Layout(
+      font = dict(
+        family = 'monospace',
+      ),
+      height = 120 + 20 * num_rows + 20,
+      # width = 629,
+      width = 500 + 40 * len(fq_cols),
+      margin = dict(
+        l = 10,
+        r = 0,
+        t = 5,
+        b = 5,
+      ),
+    ),
+  )
+
+@app.callback(
+  Output('B_bystander_module_container', 'style'),
+  [Input('B_hidden_chosen_aa_frame', 'children')],
+  [State('B_bystander_module_container', 'style')])
+def show_hide_aa_module(aa_frame_text, prev_style):
+  if aa_frame_text == 'None':
+    prev_style['display'] = 'none'
+  else:
+    if 'display' in prev_style:
+      del prev_style['display']
+  return prev_style
 
 
