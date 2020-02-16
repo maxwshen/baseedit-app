@@ -33,6 +33,10 @@ from be_predict_efficiency import predict as efficiency_model
 bystander_model.init_all_models()
 efficiency_model.init_all_models()
 
+coef_fold = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1]) + '/'
+sys.path.append(coef_fold)
+coef_df = pd.read_csv(coef_fold + f'assets/efficiency_coefficients.csv', index_col = 0)
+
 # Set up flask caching
 CACHE_CONFIG = {
   'CACHE_TYPE': 'redis',
@@ -65,10 +69,6 @@ layout = html.Div([
     [
       html.Div(
         id = 'B_hidden_pred_signal_bystander',
-        children = 'init'
-      ),
-      html.Div(
-        id = 'B_hidden_pred_signal_efficiency',
         children = 'init'
       ),
       html.Div(
@@ -322,13 +322,179 @@ layout = html.Div([
   html.Div([
 
     ###################################################
+    # Module: Efficiency
+    ###################################################
+    html.Div([
+      # header
+      html.Div([
+        html.Div([
+          html.Strong('Comparison of mean base editing efficiency by base editor')
+          ],
+          className = 'module_header_text'),
+        ],
+        className = 'module_header'
+      ),
+
+      # # Row
+      html.Div([
+        # Item. Y-axis label
+        html.Div(
+          'Predicted frequency of sequenced reads with base editing activity at any substrate nucleotide',
+          className = 'two columns',
+          style = dict(
+            textAlign = 'right',
+            lineHeight = '1',
+            # height = '200px',
+            # translateY 100px sets top of text to middle, which makes multi-line text too low
+            transform = 'translate(35px, 65px)',
+            fontSize = '14px',
+          ),
+        ),
+
+        # Item. Plot
+        dcc.Graph(
+          id = 'B_efficiency_plot',
+          config = dict(
+            modeBarButtonsToRemove = modebarbuttons_2d,
+            displaylogo = False,
+            displayModeBar = False,
+            staticPlot = True,
+          ),
+          style = dict(
+            transform = 'translateX(20px)',
+          ),
+          className = 'ten columns',
+        ),
+
+        ],
+        className = 'row',
+        style = dict(
+          marginBottom = '15px',
+        ),
+      ),
+
+      # # Row: Slider
+      html.Div([
+        # Item. 
+        html.Div(
+          'Rescale editing efficiencies:',
+          className = 'one column',
+          style = dict(
+            width = '32.4%',
+            textAlign = 'right',
+            transform = 'translate(-10px, 8px)',
+          ),
+        ),
+
+        # Item: Efficiency slider
+        html.Div(
+          dcc.Slider(
+            id = 'B_slider_efficiency_mean',
+            min = 0.01,
+            max = 0.99,
+            step = 0.01,
+            value = 0.50,
+            updatemode = 'drag',
+            # updatemode = 'mouseup',
+          ),
+          style = dict(
+            float = 'left',
+            width = '300px',
+            marginTop = '15px',
+            marginRight = '100px',
+          ),
+        ),
+
+        ],
+        className = 'row',
+        style = dict(
+          marginBottom = '10px',
+        ),
+      ),
+
+      # # Row: Use efficiency radio
+      html.Div([
+        # Item. 
+        html.Div(
+          'Report frequencies among:',
+          className = 'one column',
+          style = dict(
+            width = '32.4%',
+            textAlign = 'right',
+            transform = 'translate(-10px, -3px)',
+          ),
+        ),
+
+        # Item
+        html.Div(
+          dcc.RadioItems(
+            id = 'B_use_efficiency',
+            options = [
+              {'label': 'edited reads (ignores variation in editor efficiencies)', 'value': 'no_efficiency'},
+              {'label': 'sequenced reads by including efficiency', 'value': 'efficiency'},
+            ],
+            value = 'efficiency',
+            labelStyle = {
+              'display': 'inline-block',
+            },
+          ),
+          style = dict(
+            float = 'left',
+            width = '600px',
+          ),
+        ),
+
+        ],
+        className = 'row',
+        style = dict(
+          marginBottom = '10px',
+        ),
+      ),
+
+      # # Explanation text
+      html.Div([
+        # Item. 
+        html.Div(
+          [
+            html.Div([
+              html.Span(
+              'For more information, refer to '
+              ),
+              html.A(
+                'the efficiency module.',
+                href = '/efficiency',
+                style = dict(
+                  color = 'gray',
+                ),
+              ),
+            ]),
+          ],
+          style = dict(
+            transform = 'translate(120px, 0px)',
+            marginBottom = '0px',
+            width = '600px',
+          ),
+        ),
+
+        ],
+        className = 'row',
+        style = dict(
+        ),
+      ),
+
+    ], className = 'module_style',
+    ),
+
+    ###################################################
     # Module: Bystander, DNA
     ###################################################
     html.Div([
       # header
       html.Div([
         html.Div([
-          html.Strong('Base editing outcomes among edited reads: DNA sequence')
+          html.Strong(
+            id = 'B_bystander_DNA_module_title',
+          ),
           ],
           className = 'module_header_text'),
         ],
@@ -385,7 +551,9 @@ layout = html.Div([
         # header
         html.Div([
           html.Div([
-            html.Strong('Base editing outcomes among edited reads: Amino acid sequence')
+            html.Strong(
+              id = 'B_bystander_AA_module_title',
+            ),
             ],
             className = 'module_header_text'),
           ],
@@ -419,134 +587,6 @@ layout = html.Div([
       id = 'B_bystander_module_container',
       style = {'display': 'none'},
       className = 'animate-bottom',
-    ),
-
-    ###################################################
-    # Module: Efficiency
-    ###################################################
-    html.Div([
-      # header
-      html.Div([
-        html.Div([
-          html.Strong('Base editing efficiency')
-          ],
-          className = 'module_header_text'),
-        ],
-        className = 'module_header'
-      ),
-
-      # Row
-      html.Div([
-        # Item. Y-axis label
-        html.Div(
-          'Predicted frequency of sequenced reads with base editing activity at any substrate nucleotide',
-          className = 'two columns',
-          style = dict(
-            textAlign = 'right',
-            lineHeight = '1',
-            # height = '200px',
-            # translateY 100px sets top of text to middle, which makes multi-line text too low
-            transform = 'translate(35px, 65px)',
-            fontSize = '14px',
-          ),
-        ),
-
-        # Item. Plot
-        dcc.Graph(
-          id = 'B_efficiency_plot',
-          config = dict(
-            modeBarButtonsToRemove = modebarbuttons_2d,
-            displaylogo = False,
-            displayModeBar = False,
-            staticPlot = True,
-          ),
-          style = dict(
-            transform = 'translateX(20px)',
-          ),
-          className = 'four columns',
-        ),
-
-        # Item. Text descriptions
-        html.Div(
-          id = 'B_efficiency_longtext',
-          style = dict(
-            transform = 'translateY(15px)',
-          ),
-          className = 'six columns',
-        ),
-
-        ],
-        className = 'row',
-      ),
-
-      # Row: Slider
-      html.Div([
-        # Item. 
-        html.Div(
-          '',
-          className = 'three columns',
-        ),
-
-        # Item
-        html.Div(
-          dcc.Slider(
-            id = 'B_slider_efficiency_mean',
-            min = 0.01,
-            max = 0.99,
-            step = 0.01,
-            value = 0.30,
-            updatemode = 'drag',
-            # updatemode = 'mouseup',
-            marks = {
-              0.10: {'label': '10%', 
-                'style': {'color': lib.rgb['gray']},
-              },
-              0.25: {'label': '25%',
-                'style': {'color': lib.rgb['gray']},
-              },
-              0.50: {'label': '50%',
-                'style': {'color': lib.rgb['gray']},
-              },
-              0.75: {'label': '75%',
-                'style': {'color': lib.rgb['gray']},
-              },
-              0.90: {'label': '90%',
-                'style': {'color': lib.rgb['gray']},
-              },
-            },
-          ),
-          style = dict(
-            float = 'right',
-            width = '300px',
-            marginTop = '15px',
-            marginRight = '100px',
-            marginBottom = '30px',
-          ),
-        ),
-
-        ],
-        className = 'row',
-        style = dict(
-          marginBottom = '10px',
-        ),
-      ),
-
-      html.Div(
-        [
-          html.Div(
-            html.A(
-              '🔗 Shareable link to your results', 
-              id = 'B_page_link'
-            ),
-          ),
-        ], 
-        style = dict(
-          height = '30px',
-          textAlign = 'center',
-        ),
-      ),
-
-    ], className = 'module_style',
     ),
 
 
@@ -768,9 +808,143 @@ def update_protospacers(seq):
   return options
 
 
+@app.callback(
+  Output('B_bystander_DNA_module_title', 'children'),
+  [Input('B_use_efficiency', 'value')]
+  )
+def update_gt_title(value):
+  if value == 'no_efficiency':
+    return 'Base editing outcomes among edited reads: DNA sequence'
+  elif value == 'efficiency':
+    return 'Base editing outcomes among sequenced reads: DNA sequence'
+
+
+@app.callback(
+  Output('B_bystander_AA_module_title', 'children'),
+  [Input('B_use_efficiency', 'value')]
+  )
+def update_gt_title(value):
+  if value == 'no_efficiency':
+    return 'Base editing outcomes among edited reads: Amino acid sequence'
+  elif value == 'efficiency':
+    return 'Base editing outcomes among sequenced reads: Amino acid sequence'
+
 ###########################################
 ########     Module callbacks     #########
 ###########################################
+
+##
+# Efficiency
+##
+@app.callback(
+  Output('B_efficiency_plot', 'figure'),
+  [Input('B_slider_efficiency_mean', 'value'),
+   Input('B_hidden_chosen_base_editor_type', 'children'),
+   Input('B_hidden_chosen_celltype', 'children'),
+  ])
+def efficiency_logit_plot(mean, base_editor_type, celltype):
+  from scipy.special import logit, expit
+  logit_mean = logit(mean)
+  std = 1
+
+  chosen_editors = lib.type_to_bes[f'{base_editor_type}, {celltype}']
+
+  # Form curve
+  curve_xs = np.arange(-2.2, 2.2, 0.01)
+  curve_ys = expit(std * curve_xs + logit_mean)
+
+  all_data = [
+    go.Scattergl(
+      x = curve_xs,
+      y = curve_ys,
+      line = dict(
+        color = lib.rgb['gray'],
+      ),
+      mode = 'lines',
+      showlegend = False,
+    ),
+  ]
+
+  special_pts_x, special_pts_y = [], []
+  pt_colors = []
+  pt_texts = []
+
+  editor_shapes = []
+  for idx, row in coef_df.iterrows():
+    editor = row['Public base editor']
+    if editor not in chosen_editors:
+      continue
+    x_val = float(row['Coefficient'])
+    y_val = expit(x_val + logit_mean)
+    color = lib.editor_cmap[editor]
+
+    special_pts_x.append(x_val)
+    special_pts_y.append(y_val)
+    pt_colors.append(color)
+    pt_texts.append(f'{editor}')
+    # pt_texts.append(f'{editor}: {y_val:.1%}')
+
+    editor_shapes.append(
+      dict(
+        type = 'line',
+        x0 = x_val,
+        y0 = 0,
+        x1 = x_val,
+        y1 = y_val,
+        line = dict(
+          color = color,
+          width = 1.75,
+          dash = 'dot',
+        ),
+      ),
+    )
+
+    all_data.append(
+      go.Scatter(
+        x = [x_val],
+        y = [y_val],
+        # mode = 'markers+text',
+        mode = 'markers',
+        marker = dict(
+          color = color,
+          size = 10,
+        ),
+        textposition = 'bottom center',
+        hoverinfo = 'x+y',
+        name = f'{editor}: {y_val:.0%}',
+      ),
+    )
+
+  return dict(
+    data = all_data, 
+    layout = go.Layout(
+      font = dict(
+        family = 'Arial',
+      ),
+      yaxis = dict(
+        range = [0, 1],
+        # title = 'Predicted fraction of sequenced reads with base editing activity at any substrate nucleotide',
+        tickvals = [0, 0.25, 0.5, 0.75, 1],
+        ticktext = ['0%', '25%', '50%', '75%', '100%'],
+      ),
+      xaxis = dict(
+        title = 'Batch-adjusted logistic regression coefficient',
+        tickvals = [-2, -1, 0, 1, 2],
+        zeroline = False,
+      ),
+      shapes = editor_shapes, 
+      height = 200,
+      # width = 550,
+      width = 700,
+      margin = dict(
+        l = 30,
+        r = 30,
+        t = 30,
+        b = 30,
+      ),
+    ),
+  )
+
 
 ##
 # Bystander, genotype table
@@ -780,8 +954,8 @@ def update_protospacers(seq):
   [Input('B_hidden_pred_signal_bystander', 'children'),
   ])
 def update_gt_table(signal):
-  seq, base_editor, celltype = signal.split(',')
-  pred_df, stats, nt_cols = bystander_predict_cache(seq, base_editor, celltype)
+  seq, base_editor_type, celltype = signal.split(',')
+  pred_df, stats, nt_cols = bystander_predict_cache(seq, base_editor_type, celltype)
 
   p0idx = 19
   target_seq = stats['50-nt target sequence']
@@ -813,7 +987,7 @@ def update_gt_table(signal):
 
     fqs = top10[df_fq_col]
     for fq in fqs:
-      fq_strings.append(f'{100*fq:.0f}')
+      fq_strings.append(f'{100*fq:.0f}%')
       if fq < 0.02:
         curr_fills.append('white')
         curr_fonts.append(lib.font_cmap['match'])
