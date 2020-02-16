@@ -156,7 +156,7 @@ def init_all_models():
 def predict_given(seq, base_editor = '', celltype = '', mean = None, std = 2):
   # Set up variables
   key = (base_editor, celltype)
-  assert key in model_storage, 'Call init_all_models() first'
+  assert key in model_storage, f'Call init_all_models() first; {key} not found in model_storage'
 
   global model
   global model_settings

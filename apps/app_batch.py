@@ -72,6 +72,10 @@ layout = html.Div([
         children = 'init'
       ),
       html.Div(
+        id = 'B_hidden_pred_signal_bystander_efficiency',
+        children = 'init'
+      ),
+      html.Div(
         id = 'B_hidden_chosen_base_editor_type',
         children = 'BE4',
       ),
@@ -763,6 +767,34 @@ def bystander_predict_cache(seq, base_editor_type, celltype):
   # return pred_df, stats, nt_cols
   return mdf, combined_stats, nt_cols
 
+@cache.memoize(timeout = cache_timeout)
+def bystander_efficiency_adjust_cache(seq, base_editor_type, celltype, efficiency_mean):
+  '''
+    pred_df has Predicted frequency, {editor} columns: Run efficiency model for each editor and convert precisions to frequencies among sequenced reads
+  '''
+  pred_df, combined_stats, nt_cols = bystander_predict_cache(seq, base_editor_type, celltype)
+
+  editors = lib.type_to_bes[f'{base_editor_type}, {celltype}']
+
+  for base_editor in editors:
+    pred_d = efficiency_model.predict_given(
+      seq,
+      base_editor = base_editor,
+      celltype = celltype,
+    )
+    logit_score = pred_d['Predicted logit score']
+    from scipy.special import logit, expit
+    logit_mean = logit(float(efficiency_mean))
+    std = lib.efficiency_model_std
+    eff_pred = expit(std * logit_score + logit_mean)
+
+    pred_df[f'Predicted frequency, {base_editor}'] *= eff_pred
+
+    combined_stats[f'{base_editor}, predicted efficiency Z-score'] = eff_pred
+
+  return pred_df, combined_stats, nt_cols
+
+
 ##
 # Prediction callbacks
 ##
@@ -780,6 +812,14 @@ def bystander_predict(seq, ps, base_editor_type, celltype):
   bystander_predict_cache(seq, base_editor_type, celltype)
   return '%s,%s,%s' % (seq, base_editor_type, celltype)
 
+@app.callback(
+  Output('B_hidden_pred_signal_bystander_efficiency', 'children'),
+  [Input('B_hidden_pred_signal_bystander', 'children'),
+   Input('B_slider_efficiency_mean', 'value')])
+def bystander_efficiency_adjust(signal, efficiency_mean):
+  seq, base_editor_type, celltype = signal.split(',')
+  bystander_efficiency_adjust_cache(seq, base_editor_type, celltype, efficiency_mean)
+  return f'{seq},{base_editor_type},{celltype},{efficiency_mean}'
 
 
 ##
@@ -818,16 +858,16 @@ def update_gt_title(value):
   elif value == 'efficiency':
     return 'Base editing outcomes among sequenced reads: DNA sequence'
 
-
 @app.callback(
   Output('B_bystander_AA_module_title', 'children'),
   [Input('B_use_efficiency', 'value')]
   )
-def update_gt_title(value):
+def update_aa_title(value):
   if value == 'no_efficiency':
     return 'Base editing outcomes among edited reads: Amino acid sequence'
   elif value == 'efficiency':
     return 'Base editing outcomes among sequenced reads: Amino acid sequence'
+
 
 ###########################################
 ########     Module callbacks     #########
@@ -951,11 +991,16 @@ def efficiency_logit_plot(mean, base_editor_type, celltype):
 ##
 @app.callback(
   Output('B_bystander_gt_table', 'figure'),
-  [Input('B_hidden_pred_signal_bystander', 'children'),
+  [Input('B_hidden_pred_signal_bystander_efficiency', 'children'),
+   Input('B_use_efficiency', 'value'),
   ])
-def update_gt_table(signal):
-  seq, base_editor_type, celltype = signal.split(',')
-  pred_df, stats, nt_cols = bystander_predict_cache(seq, base_editor_type, celltype)
+def update_gt_table(signal, use_efficiency):
+  seq, base_editor_type, celltype, efficiency_mean = signal.split(',')
+
+  if use_efficiency == 'no_efficiency':
+    pred_df, stats, nt_cols = bystander_predict_cache(seq, base_editor_type, celltype)
+  elif use_efficiency == 'efficiency':
+    pred_df, stats, nt_cols = bystander_efficiency_adjust_cache(seq, base_editor_type, celltype, efficiency_mean)
 
   p0idx = 19
   target_seq = stats['50-nt target sequence']
