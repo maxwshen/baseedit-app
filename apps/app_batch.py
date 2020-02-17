@@ -772,19 +772,22 @@ def bystander_efficiency_adjust_cache(seq, base_editor_type, celltype, efficienc
   '''
     pred_df has Predicted frequency, {editor} columns: Run efficiency model for each editor and convert precisions to frequencies among sequenced reads
   '''
+  from scipy.special import logit, expit
   pred_df, combined_stats, nt_cols = bystander_predict_cache(seq, base_editor_type, celltype)
 
   editors = lib.type_to_bes[f'{base_editor_type}, {celltype}']
 
   for base_editor in editors:
+    editor_coef = float(coef_df[coef_df['Public base editor'] == base_editor]['Coefficient'].iloc[0])
+    editor_mean = editor_coef + logit(float(efficiency_mean))
+
     pred_d = efficiency_model.predict_given(
       seq,
       base_editor = base_editor,
       celltype = celltype,
     )
     logit_score = pred_d['Predicted logit score']
-    from scipy.special import logit, expit
-    logit_mean = logit(float(efficiency_mean))
+    logit_mean = editor_mean
     std = lib.efficiency_model_std
     eff_pred = expit(std * logit_score + logit_mean)
 
@@ -885,8 +888,8 @@ def update_aa_title(value):
 def efficiency_logit_plot(mean, base_editor_type, celltype):
   from scipy.special import logit, expit
   logit_mean = logit(mean)
-  # std = 1
-  std = lib.efficiency_model_std
+  std = 1
+  # std = lib.efficiency_model_std
 
   chosen_editors = lib.type_to_bes[f'{base_editor_type}, {celltype}']
 
