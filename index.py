@@ -65,7 +65,7 @@ def flask_tooltip_logo():
 # Google analytics tracker
 @app.server.route('/static/gtag.js')
 def serve_gtag():
-  return flask.send_from_directory(base_dir + '/gtag.js')
+  return flask.send_from_directory(base_dir + '/assets/', 'gtag.js')
 
 app.scripts.append_script({'external_url': '/static/gtag.js'})
 
