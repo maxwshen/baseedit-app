@@ -10,6 +10,7 @@ from apps import app_single
 from apps import app_batch
 from apps import app_efficiency
 
+base_dir = os.getcwd()
 
 ###################################################################
 ###################################################################
@@ -55,16 +56,16 @@ def display_page(pathname):
 
 @app.server.route('/loading_dna.gif')
 def flask_loading_gif():
-  return flask.send_from_directory(os.getcwd() + '/assets/', 'loading_dna.gif')
+  return flask.send_from_directory(base_dir + '/assets/', 'loading_dna.gif')
 
 @app.server.route('/tooltip_logo.gif')
 def flask_tooltip_logo():
-  return flask.send_from_directory(os.getcwd() + '/assets/', 'tooltip_logo.gif')
+  return flask.send_from_directory(base_dir + '/assets/', 'tooltip_logo.gif')
 
 # Google analytics tracker
 @app.server.route('/static/gtag.js')
 def serve_gtag():
-  return flask.send_from_directory(css_directory, 'gtag.js')
+  return flask.send_from_directory(base_dir + '/gtag.js')
 
 app.scripts.append_script({'external_url': '/static/gtag.js'})
 
