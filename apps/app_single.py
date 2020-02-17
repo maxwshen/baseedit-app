@@ -229,7 +229,7 @@ layout = html.Div([
                   html.Div(
                     [
                       html.Img(
-                        src = 'https://www.crisprbehive.design/tooltip_logo.png',
+                        src = 'https://www.crisprbehive.design/tooltip_logo.gif',
                         className = 'tooltiplogo'
                       ),
                       html.Span(
@@ -822,7 +822,7 @@ def update_efficiency_mean_text(chosen_mean, signal):
     html.Span(f'If the average editing efficiency is {100*chosen_mean:.1f}%, ',
     ),
     html.Div([
-      html.Img(src = 'https://www.crisprbehive.design/tooltip_logo.png', className = 'tooltiplogo'),
+      html.Img(src = 'https://www.crisprbehive.design/tooltip_logo.gif', className = 'tooltiplogo'),
       html.Span(tooltip_msg, className = 'tooltiptext'),
       ], className = 'tooltip',
     ),

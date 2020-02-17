@@ -57,9 +57,9 @@ def display_page(pathname):
 def flask_loading_gif():
   return flask.send_from_directory(os.getcwd() + '/assets/', 'loading_dna.gif')
 
-@app.server.route('/tooltip_logo.png')
+@app.server.route('/tooltip_logo.gif')
 def flask_tooltip_logo():
-  return flask.send_from_directory(os.getcwd() + '/assets/', 'tooltip_logo.png', mimetype = 'image/png')
+  return flask.send_from_directory(os.getcwd() + '/assets/', 'tooltip_logo.gif')
 
 # Google analytics tracker
 @app.server.route('/static/gtag.js')
