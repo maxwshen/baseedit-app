@@ -225,7 +225,7 @@ layout = html.Div([
                   html.Div(
                     [
                       html.Img(
-                        src = 'https://www.crisprbehive.design/tooltip_logo.gif',
+                        src = 'http://www.crisprindelphi.design/staticfiles/tooltip_logo',
                         className = 'tooltiplogo'
                       ),
                       html.Span(
