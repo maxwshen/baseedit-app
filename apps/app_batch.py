@@ -885,7 +885,8 @@ def update_aa_title(value):
 def efficiency_logit_plot(mean, base_editor_type, celltype):
   from scipy.special import logit, expit
   logit_mean = logit(mean)
-  std = 1
+  # std = 1
+  std = lib.efficiency_model_std
 
   chosen_editors = lib.type_to_bes[f'{base_editor_type}, {celltype}']
 

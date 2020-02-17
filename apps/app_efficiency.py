@@ -255,7 +255,8 @@ layout = html.Div([
 def efficiency_logit_plot(mean):
   from scipy.special import logit, expit
   logit_mean = logit(mean)
-  std = 1
+  # std = 1
+  std = lib.efficiency_model_std
 
   # Form curve
   curve_xs = np.arange(-2.2, 2.2, 0.01)
