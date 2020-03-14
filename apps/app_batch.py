@@ -776,8 +776,12 @@ def bystander_efficiency_adjust_cache(seq, base_editor_type, celltype, efficienc
   pred_df, combined_stats, nt_cols = bystander_predict_cache(seq, base_editor_type, celltype)
 
   editors = lib.type_to_bes[f'{base_editor_type}, {celltype}']
+  public_bes = set(coef_df['Public base editor'])
 
   for base_editor in editors:
+    if base_editor not in public_bes:
+      continue
+
     editor_coef = float(coef_df[coef_df['Public base editor'] == base_editor]['Coefficient'].iloc[0])
     editor_mean = editor_coef + logit(float(efficiency_mean))
 
