@@ -280,6 +280,8 @@ def efficiency_logit_plot(mean):
 
   editor_shapes = []
   for idx, row in coef_df.iterrows():
+    if row['Hidden']:
+      continue
     editor = row['Public base editor']
     x_val = float(row['Coefficient'])
     y_val = expit(x_val + logit_mean)

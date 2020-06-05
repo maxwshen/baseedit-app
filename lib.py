@@ -535,7 +535,7 @@ editor_cmap = {
   'eA3A': 'rgb(140, 104, 203)',
   'AID': rgb['green'],
   'CDA': 'rgb(239, 185, 23)',
-  'ABE-CP1040': rgb['orange'],
+  'ABE-CP1041': rgb['orange'],
   'evoAPOBEC': 'rgb(237, 71, 149)',
 }
 
@@ -635,8 +635,9 @@ editor_to_header = {
   'eA3A-T31AT44A': ['eA3A', 'T31A', 'T44A'],
   'eA3A-T44DS45A': ['eA3A', 'T44D', 'S45A'],
   'BE4-H47ES48A': ['BE4', 'H47E', 'S48A'],
+  'EA-BE4': ['EA-', 'BE4'],
   'ABE8': ['ABE', '8e'],
-  'ABE-CP1040': ['ABE-', 'CP', '1040'],
+  'ABE-CP1041': ['ABE-', 'CP', '1041'],
   'BE4-CP1028': ['BE4-', 'CP', '1028'],
 }
 
