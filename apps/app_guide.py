@@ -46,7 +46,7 @@ layout = html.Div([
     ###################################################
     # Upper header
     ###################################################
-    header.get_navigation_header('about'),
+    header.get_navigation_header('guide'),
 
     ],
     style = dict(
