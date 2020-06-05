@@ -322,6 +322,8 @@ type_to_bes = defaultdict(list)
     {'label': '1-bp insertions', 'value': '1-bp insertions'},
 '''
 for idx, row in bystander_models_design.iterrows():
+  if row['Hidden']:
+    continue
   editor = row['Public base editor']
   celltype = row['Celltype']
   be_type = row['Public base editor type']

@@ -487,10 +487,10 @@ def init_model(base_editor = '', celltype = ''):
   ))
   model.eval()
 
-  print(f'Model successfully initialized. Settings:')
+  print(f'Model successfully initialized. Settings:', )
   public_settings = [key for key in model_settings if key[:2] != '__']
   for key in public_settings:
-    print(f'\t{key}: {model_settings[key]}')
+    print(f' {key}: {model_settings[key]}', )
 
   global init_flag
   init_flag = True
