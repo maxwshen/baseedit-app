@@ -9,6 +9,8 @@ from app_holder import app
 from apps import app_single
 from apps import app_batch
 from apps import app_efficiency
+from apps import app_about
+from apps import app_guide
 
 base_dir = os.getcwd()
 
