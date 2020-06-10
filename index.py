@@ -64,6 +64,14 @@ def flask_loading_gif():
 def flask_tooltip_logo():
   return flask.send_from_directory(base_dir + '/assets/', 'tooltip_logo.gif')
 
+# Google analytics tracker
+# Deprecated, use app_holder
+# @app.server.route('/static/gtag.js')
+# def serve_gtag():
+#   return flask.send_from_directory(base_dir, 'gtag.js')
+
+# app.scripts.append_script({'external_url': '/static/gtag.js'})
+
 ###################################################################
 if __name__ == '__main__':
   app.run_server(debug = True)

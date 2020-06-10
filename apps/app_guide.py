@@ -81,6 +81,13 @@ layout = html.Div([
       ], style = dict(paddingLeft = '24px', marginBottom = '8px')),
 
       html.Div([
+        html.A('5\'G sgRNA design', 
+          href = 'guide#5G', 
+          className = 'dynamicunderline',
+          style = dict(color = 'gray', textDecoration = 'none')),
+      ], style = dict(paddingLeft = '24px', marginBottom = '8px')),
+
+      html.Div([
         html.A('Calibrating editing efficiency predictions?', 
           href = 'guide#calibration', 
           className = 'dynamicunderline',
@@ -186,6 +193,28 @@ layout = html.Div([
               id = 'python',
               className = 'hashbuffer',
             ),
+
+            html.Div(
+              [
+                dcc.Markdown(dedent('''
+                  #### 5'G sgRNA design
+
+                  The base editing data used for training the models added a 5'G to a 20-nt protospacer when the first nucleotide was not a G.
+
+                  We have observed that the base editing window changes depending on whether the protospacer is 20 nt or 21 nt and if the added 5'G is a match or mismatch to the genome. Specifically, when a 21 nt protospacer is used and the 5'G does match the genome, the base editing window is shifted by about 0.5 nucleotides 5' relative to the window with a 20-nt protospacer.
+
+                  Our models have automatically learned these properties from the training data. If you use an sgRNA without  a 5'G where our design rule would add it, and it would match the genome, you should note that your base editing window will be shifted 3' by about 0.5 nucleotides relative to the BE-Hive predictions.
+
+                  It is possible to artificially adjust for this behavior in a manner that can make BE-Hive predictions slightly more accurate for your application. Specifically, if protospacer position 1 is not a G, and our design rule would prepend a 5'G but you desire not to, and protospacer position 0 is a G, then you can change the G0 to another nucleotide to effectively "trick" the models into using a 20-nt protospacer. We recommend not changing G0 to a base editing substrate nucleotide, and avoiding strong motifs such as TC for CBEs. With these suggestions in mind, it would be typical to use A0 for CBEs and C0 for ABEs.
+
+                  '''),
+                  className = 'markdown_style',
+                ),
+              ],
+              id = '5G',
+              className = 'hashbuffer',
+            ),
+
 
             html.Div(
               [
