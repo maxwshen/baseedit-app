@@ -108,6 +108,20 @@ layout = html.Div([
               className = 'markdown_style',
             ),
 
+            html.Div(
+              [
+                html.Img(
+                  src = '/assets/graphical_abstract.png',
+                  style = dict(
+                    maxWidth = '70%',
+                  ),
+                ),
+              ],
+              style = dict(
+                textAlign = 'center',
+              )
+            )
+
             # html.Div(
             #   [
             #     html.Img(src = '/assets/fig-coverplus.PNG'),
