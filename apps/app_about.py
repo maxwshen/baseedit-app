@@ -102,7 +102,7 @@ layout = html.Div([
 
               Please cite our paper if this web app was helpful in your work.
 
-              This web app was developed by Max W. Shen using PyTorch, Dash Plotly, Heroku, and GitHub. Max W. Shen also developed the [inDelphi](www.crisprindelphi.design) online interactive web app which assists in designing CRISPR experiments. 
+              This web app was developed by Max W. Shen using PyTorch, Dash Plotly, Heroku, and GitHub. Max W. Shen also developed the [inDelphi](https://www.crisprindelphi.design) online interactive web app which assists in designing CRISPR experiments. 
 
               '''),
               className = 'markdown_style',

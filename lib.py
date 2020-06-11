@@ -633,7 +633,7 @@ editor_to_header = {
   'eA3A': ['eA3A'],
   'eA3A-T31A': ['eA3A', 'T31A'],
   'eA3A-T31AT44A': ['eA3A', 'T31A', 'T44A'],
-  'eA3A-T44DS45A': ['eA3A', 'T44D', 'S45A'],
+  'eA3A-BE5': ['eA3A', 'BE5'],
   'BE4-H47ES48A': ['BE4', 'H47E', 'S48A'],
   'EA-BE4': ['EA-', 'BE4'],
   'ABE8': ['ABE', '8e'],
