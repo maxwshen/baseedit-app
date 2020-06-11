@@ -194,6 +194,8 @@ layout = html.Div([
                 ),
 
                 dcc.Markdown(dedent('''
+                  *Figure: Schematic of BE-Hive facilitating in base editing experimental design.*
+
                   Predictions from the two models can be combined by simple multiplication since the units in the bystander editing model's denominator and the editing efficiency model's numerator are the same. The units of the combined prediction are the frequency of a specific combination of base editing outcomes across all nucleotides in the base editing window among all sequenced reads, including unedited wild-type sequenced reads, i.e. the predicted absolute frequency of a given base editing outcome. 
 
                   Our single mode outputs bystander editing predictions and base editing efficiency separately. In batch mode the two predictions are combined or separated by toggling the reported frequencies between the “sequenced reads by including efficiency" and “edited reads (ignores variation in editor efficiencies)” modes. The combined bystander and efficiency predictions in batch mode allow for easy comparison between base editors of absolute base editing outcomes.
@@ -240,7 +242,7 @@ layout = html.Div([
             html.Div(
               [
                 dcc.Markdown(dedent('''
-                  #### Single Mode
+                  #### Batch Mode
 
                   Use batch mode to directly compare cytosine or adenine base editing outcomes across all available cytosine or adenine base editors. Batch mode can provide edited genotypes and coding sequences as outputs with user-specified reading frame. The editing percentages displayed for each editor in the default “sequenced reads by including efficiency" mode consider differences in base editing efficiency. This feature can be turned off by toggling to “edited reads (ignores variation in editor efficiencies)”. 
 
@@ -270,6 +272,8 @@ layout = html.Div([
                 ),
 
                 dcc.Markdown(dedent('''
+                  *Figure: Overview of genome-integrated target library assay used to train BE-Hive models. The library includes 8,142 target sequences with all possible 6-mers surrounding a substrate A or C at protospacer position 6, and 2,496 sequences that collectively contain all possible 5-mers across positions -1 to 13.*
+
                   To train our base editing efficiency models, we calculated mean base editing efficiencies using a genome-integrated library of ~ 12,000 sgRNA-target site pairs. The editor efficiencies tab depicts the relative average base editing efficiency of every available base editor using this library data. If a user knows their average base editing efficiency for one editor in their experimental system, the average base editing efficiency of other editors may be estimated by comparison. 
 
                   The proper strategy to determine the "average" editing efficiency of a base editor in your experimental system is to take the average over the theoretical set of all sgRNA-target pairs with all possible sequence contexts. Since most base editing experiments avoid sequence contexts known to have poor efficiency (such as those without centrally located cytosines when using cytosine base editors), simply averaging your previous base editing data is likely to overestimate this quantity. 
@@ -337,6 +341,13 @@ layout = html.Div([
                   style = dict(
                     maxWidth = '100%',
                   ),
+                ),
+
+                dcc.Markdown(dedent('''
+                  *Figure: Sequence motifs for base editing efficiency of several commonly used base editors. Signs of learned weights indicate contribution above, or below mean activity.*
+
+                  '''),
+                  className = 'markdown_style',
                 ),
 
               ],
