@@ -6,7 +6,7 @@ A Dash/plotly python web app designed to be hosted on Heroku.
 -- See Piplock
 
 ## Contact
-maxwshen at mit.edu
+maxwshen at gmail.com
 
 ### License
-tba
+https://www.crisprbehive.design/about
